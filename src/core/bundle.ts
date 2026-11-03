@@ -47,7 +47,13 @@ export async function bundleProject(name: string, options: BundleOptions = {}) {
     const latest = await safePath(dir, `output/previews/${artifact.locale}/latest.json`);
     const pointer = JSON.parse(await fs.readFile(latest, 'utf8')) as { folder?: string };
     if (!pointer.folder) throw new Error(`Latest preview is missing for ${artifact.locale}.`);
-    const folder = within(path.join(dir, 'output', 'previews', artifact.locale), path.relative(path.join(dir, 'output', 'previews', artifact.locale), pointer.folder));
+    const previewRoot = await fs.realpath(await safePath(dir, `output/previews/${artifact.locale}`));
+    const projectRoot = await fs.realpath(dir);
+    const actualFolder = await fs.realpath(pointer.folder);
+    // macOS temp paths may spell the same location as /var or /private/var.
+    // Compare canonical paths, then return to project-relative paths for safePath.
+    within(previewRoot, path.relative(previewRoot, actualFolder));
+    const folder = await safePath(dir, path.relative(projectRoot, actualFolder));
     const reportFile = await safePath(dir, path.relative(dir, path.join(folder, 'render.json')));
     const report = JSON.parse(await fs.readFile(reportFile, 'utf8')) as { pptxSha256?: string; sourceFingerprint?: string; slides?: string[]; renderer?: string };
     if (report.pptxSha256 !== artifact.sha256 || report.sourceFingerprint !== artifact.sourceFingerprint) throw new Error(`Latest preview for ${artifact.locale} is stale. Render again before bundling.`);
