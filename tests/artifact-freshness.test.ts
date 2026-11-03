@@ -34,6 +34,16 @@ beforeAll(async () => {
 
 afterAll(async () => { await fs.rm(sandbox, { recursive: true, force: true }); });
 
+test('project commands accept an npm-forwarded positional project name', async () => {
+  const positional = await cli('validate', 'freshness');
+  expect(positional.code).toBe(0);
+  expect(positional.output).toContain('"errors": 0');
+  expect((await cli('validate', '--project', 'freshness')).code).toBe(0);
+  const ambiguous = await cli('validate', 'freshness', '--project', 'demo');
+  expect(ambiguous.code).not.toBe(0);
+  expect(ambiguous.output).toContain('Specify the project once');
+}, 60000);
+
 test('delivery validation distinguishes stale, modified, and missing PPTX from source validation', async () => {
   expect((await cli('validate', '--project', 'freshness')).output).toContain('"errors": 0');
   const original = YAML.parse(await fs.readFile(source(), 'utf8'));

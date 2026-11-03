@@ -19,7 +19,17 @@ const cli=new Command().name('pptimistic').description('Create editable presenta
 const defaults=projectSchema.parse({title:'PPTimistic',...await readYaml(path.join(root,'config/defaults.yaml'))});
 const language=(value?:string) => (value??process.env.LC_ALL??process.env.LANG??Intl.DateTimeFormat().resolvedOptions().locale).toLowerCase().startsWith('fr')?'fr':'en';
 const split=(s:string)=>s.split(',').map(s=>s.trim()).filter(Boolean);
-function projectOption(c:Command) { return c.option('-p, --project <name>','Project folder under projects/','demo'); }
+function projectOption(c:Command) {
+  c.argument('[projectName]','Project folder under projects/ (also accepted when npm drops --project)')
+    .option('-p, --project <name>','Project folder under projects/','demo');
+  c.hook('preAction',command=>{
+    const name=command.processedArgs[0] as string|undefined;
+    if (!name) return;
+    if (command.getOptionValueSource('project')==='cli') throw new Error('Specify the project once, using --project or a positional name.');
+    command.setOptionValue('project',name);
+  });
+  return c;
+}
 function print(value:unknown) { console.log(typeof value==='string'?value:JSON.stringify(value,null,2)); }
 
 for (const command of ['setup','new','demo']) {
@@ -75,10 +85,10 @@ cli.command('doctor').description('Check Node, dependencies, fonts, writable sto
 });
 projectOption(cli.command('build').description('Validate and build independent PPTX files; preserve earlier outputs'))
   .option('--locale <locale>','Build one language').option('--authorize <ids>','Explicitly allow changes to these approved/locked slide IDs (comma-separated)')
-  .action(async o=>{const r=await buildProject(o.project,{locale:o.locale,authorize:split(o.authorize??'')});print({files:r.files,changedSlides:r.report.changedSlides,warnings:r.report.issues});});
+  .action(async (_name,o)=>{const r=await buildProject(o.project,{locale:o.locale,authorize:split(o.authorize??'')});print({files:r.files,changedSlides:r.report.changedSlides,warnings:r.report.issues});});
 projectOption(cli.command('validate').description('Validate source, translations, layout and current PPTX outputs'))
   .option('--source-only','Validate authored source without requiring current PPTX outputs')
-  .action(async o=>{
+  .action(async (_name,o)=>{
   const {dir,config,deck,theme}=await loadProject(o.project);
   const issues=await validateContent(dir,config,deck,theme);
   const {drawSlide,validateGeometry}=await import('../layouts/index.js');
@@ -98,7 +108,7 @@ projectOption(cli.command('validate').description('Validate source, translations
   print({issues,errors:issues.filter(i=>i.severity==='error').length});
   if(issues.some(i=>i.severity==='error')) process.exitCode=1;
 });
-projectOption(cli.command('claims').description('Print a local read-only claim provenance report (excerpt text is withheld)')).action(async o=>{
+projectOption(cli.command('claims').description('Print a local read-only claim provenance report (excerpt text is withheld)')).action(async (_name,o)=>{
   const {dir,config,deck,theme}=await loadProject(o.project);
   const sourceIndex=await safePath(dir,'content/sources.yaml');
   const sourceRecords=await exists(sourceIndex)?((await readYaml(sourceIndex)).sources as {id:string;path:string;sha256:string;extracted?:string;extracted_sha256?:string}[]):[];
@@ -114,13 +124,13 @@ projectOption(cli.command('claims').description('Print a local read-only claim p
 });
 projectOption(cli.command('render').description('Create real slide PNG previews, PDF and a contact sheet with a local renderer'))
   .option('--locale <locale>','Render one language').option('--renderer <name>','auto, libreoffice or powerpoint','auto')
-  .action(async o=>{if(!['auto','libreoffice','powerpoint'].includes(o.renderer))throw new Error('Unknown renderer');print(await renderProject(o.project,o.locale,o.renderer));});
+  .action(async (_name,o)=>{if(!['auto','libreoffice','powerpoint'].includes(o.renderer))throw new Error('Unknown renderer');print(await renderProject(o.project,o.locale,o.renderer));});
 projectOption(cli.command('ingest').description('Retain and extract local documents with hashes; does not invent slide summaries'))
   .option('--inputs <folder>','Folder to import (defaults to project inputs/)')
-  .action(async o=>{const {dir}=await loadProject(o.project);const records=await ingest(dir,o.inputs);print(records);if(records.some(r=>r.error))process.exitCode=1;});
+  .action(async (_name,o)=>{const {dir}=await loadProject(o.project);const records=await ingest(dir,o.inputs);print(records);if(records.some(r=>r.error))process.exitCode=1;});
 projectOption(cli.command('translate').description('Export a manual translation request, or validate and import completed translations'))
   .requiredOption('--to <locale>','Target BCP 47 language').option('--file <path>','YAML translation request with translation objects filled in')
-  .option('--authorize <ids>','Allow edits to protected slide translations').action(async o=>{
+  .option('--authorize <ids>','Allow edits to protected slide translations').action(async (_name,o)=>{
     const to=localeSchema.parse(o.to),{dir,config,deck}=await loadProject(o.project);
     if(to===config.source_locale) throw new Error('Target must differ from source locale.');
     const request=translationRequest(deck,config.source_locale,to,config.glossary);
@@ -147,13 +157,13 @@ projectOption(cli.command('revise').description('Log natural-language feedback o
   .option('--slide <id>','Stable slide ID').option('--message <text>','Feedback for an agent; logged without automatic interpretation')
   .option('--category <type>','content, layout, typography, illustration, translation, scientific-correction, global-theme','content')
   .option('--file <path>','YAML revision: slide, locale, category, message, patch/layout/status')
-  .option('--authorize <ids>','Allow a specific approved/locked slide to change').action(async o=>{
+  .option('--authorize <ids>','Allow a specific approved/locked slide to change').action(async (_name,o)=>{
     if(!o.file&&(!o.slide||!o.message))throw new Error('Provide --file or both --slide and --message.');
     print(await applyRevision(o.project,o.file?await readYaml(path.resolve(o.file)):{slide:o.slide,category:o.category,message:o.message},split(o.authorize??'')));
   });
 projectOption(cli.command('images').description('Prepare per-slide prompts and provenance; reuse accepted local assets'))
   .option('--slide <id>','Only one stable slide ID').option('--asset <file>','Attach a local image (requires --slide)')
-  .option('--authorize <ids>','Approve replacing an accepted/protected asset').action(async o=>{
+  .option('--authorize <ids>','Approve replacing an accepted/protected asset').action(async (_name,o)=>{
     if(o.asset&&!o.slide)throw new Error('--asset requires --slide.');
     print(o.asset?await attachImage(o.project,o.slide,o.asset,split(o.authorize??'')):await prepareImages(o.project,o.slide));
   });
