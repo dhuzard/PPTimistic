@@ -41,7 +41,7 @@ The fictional demo source and accepted SVG were not changed. Code changes alter 
 
 ## Next-release working-tree verification — 3 November 2026
 
-This records the CSV, translation-freshness, layout, delivery-bundle and claim-review implementation before hosted CI. The local environment remained Windows with Node 24.16.0, PowerPoint and Poppler; LibreOffice was unavailable.
+This records local verification of the CSV, translation-freshness, layout, delivery-bundle and claim-review implementation, followed by visual review of uploaded Linux CI images. The local environment remained Windows with Node 24.16.0, PowerPoint and Poppler; LibreOffice was unavailable locally.
 
 | Check | Result |
 | --- | --- |
