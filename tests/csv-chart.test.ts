@@ -65,5 +65,3 @@ test('blocks changed and re-ingested sources, invalid selections and unsupported
   const [fresh]=await ingest(dir); const invalid=chart();invalid.chart!.binding!.source_sha256=fresh.sha256;
   await expect(resolveChartData(dir,invalid)).rejects.toThrow('numeric range');
 },60000);
-
-
