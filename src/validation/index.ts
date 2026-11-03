@@ -18,6 +18,7 @@ export async function validateContent(dir: string, config: Project, deck: Deck, 
   const add = (code: string, message: string, slide?: string, locale?: string, severity: 'error'|'warning' = 'error') => issues.push({ severity, code, message, slide, locale });
   if (contrast(theme.foreground,theme.background)<4.5 || contrast(theme.secondary,theme.background)<4.5 || contrast(theme.accent, theme.background)<4.5) add('contrast','Theme text contrast is below 4.5:1.');
   const seen = new Set<string>();
+  const seenTitles = new Map<string, Set<string>>();
   const seenClaims = new Set<string>();
   const sources = await exists(path.join(dir,'content/sources.yaml')) ? (await readYaml(path.join(dir,'content/sources.yaml'))).sources as { id: string; path: string; sha256: string; extracted?: string; extracted_sha256?: string }[] : [];
   const normalized = (text: string) => text.replace(/\s+/gu, ' ').trim();
@@ -88,6 +89,11 @@ export async function validateContent(dir: string, config: Project, deck: Deck, 
     for (const locale of locales) {
       const c = slide.content[locale];
       if (!c) { add('missing-translation',`Translation is missing. Run translate --to ${locale} or supply content manually.`,slide.id,locale); continue; }
+      const title=normalized(c.title);
+      const titles=seenTitles.get(locale)??new Set<string>();
+      if (!title) add('slide-title','Provide a nonblank localized slide title.',slide.id,locale);
+      else if (titles.has(title)) add('duplicate-title','Another slide has the same localized title. Review whether a distinct title would make slide navigation clearer.',slide.id,locale,'warning');
+      titles.add(title); seenTitles.set(locale,titles);
       const source = slide.content[config.source_locale];
       if (source && locale !== config.source_locale) {
         const freshness = translationFreshness(slide, config.source_locale, locale);
@@ -103,7 +109,8 @@ export async function validateContent(dir: string, config: Project, deck: Deck, 
         if (c.seriesNames.length!==series.length) add('chart-series','Provide a localized name for every chart series.',slide.id,locale);
         if (slide.chart.fictional && !fictionalDataDisclosure(locale,c.fictionalNotice)) add('fictional-disclosure',`Provide fictionalNotice with a reviewed localized fictional-data disclosure for ${locale} before exporting fictional charts.`,slide.id,locale);
       }
-      if (slide.visual?.asset && !c.alt) add('alt-text','Add a localized accessible image description.',slide.id,locale,'warning');
+      if (['text-image','full-image'].includes(slide.layout) && slide.visual?.asset && !slide.visual.decorative && !c.alt.trim()) add('alt-text','Add an authored localized alt description explaining the illustration’s meaning, or explicitly set visual.decorative: true if it conveys no information.',slide.id,locale);
+      if (slide.layout==='chart' && !c.alt.trim()) add('alt-text','Add an authored localized chart alt description explaining the values or trend and its limits. A caption alone is not a chart description.',slide.id,locale);
       if (c.title.length>100) add('title-density','Title exceeds 100 characters; split or shorten it.',slide.id,locale,'warning');
     }
   }

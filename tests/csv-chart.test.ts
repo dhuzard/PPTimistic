@@ -19,7 +19,7 @@ async function cli(...args:string[]) {
   try { const r=await exec(process.execPath,['--import',pathToFileURL(path.join(repo,'node_modules/tsx/dist/loader.mjs')).href,path.join(repo,'src/cli/index.ts'),...args],{cwd:sandbox,timeout:60000}); return {code:0,output:r.stdout+r.stderr}; }
   catch(error) { const e=error as {code:number;stdout:string;stderr:string}; return {code:e.code,output:e.stdout+e.stderr}; }
 }
-function chart() { return slideSchema.parse({id:'S004',layout:'chart',evidence:'established',source_refs:[sourceId],chart:{fictional:false,data_ref:sourceId,binding:{source_sha256:digest,category_column:'group',value_columns:['treated','control'],rows:[3,2]}},content:{'en-US':{title:'Selected observations',labels:['C','A, B'],seriesNames:['treated','control']}}}); }
+function chart() { return slideSchema.parse({id:'S004',layout:'chart',evidence:'established',source_refs:[sourceId],chart:{fictional:false,data_ref:sourceId,binding:{source_sha256:digest,category_column:'group',value_columns:['treated','control'],rows:[3,2]}},content:{'en-US':{title:'Selected observations',alt:'Selected CSV observations: C has treated 12 and control −2.5; A, B has treated 9 and control 1.25. No uncertainty estimates were supplied.',labels:['C','A, B'],seriesNames:['treated','control']}}}); }
 beforeAll(async()=>{
   sandbox=await fs.mkdtemp(path.join(os.tmpdir(),'pptimistic-csv-chart-')); dir=path.join(sandbox,'projects/demo');
   await fs.cp(path.join(repo,'config'),path.join(sandbox,'config'),{recursive:true});

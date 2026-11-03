@@ -27,7 +27,7 @@ export const slideSchema = z.object({
   source_refs: z.array(z.string()).default([]), citations: z.array(z.string()).default([]),
   claims: z.array(claimSchema).optional(),
   content: z.record(localeSchema, localizedSchema),
-  visual: z.object({ asset: z.string().optional(), brief: z.string().default(''), accepted: z.boolean().default(false) }).strict().optional(),
+  visual: z.object({ asset: z.string().optional(), brief: z.string().default(''), accepted: z.boolean().default(false), decorative: z.boolean().optional() }).strict().optional(),
   chart: z.object({
     fictional: z.boolean().default(false), data_ref: z.string().optional(),
     series: z.array(z.object({ values: z.array(z.number().finite()).min(1) })).default([]),

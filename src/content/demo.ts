@@ -14,7 +14,7 @@ export function demoDeck(title: string) {
       const p = parts as string[];
       return [locale, { title: p[0], message: p[1], body: p[2], notes: p[2],
         caption: r.id === 'S004' ? p[1] : '',
-        alt: r.id === 'S002' ? (locale === 'fr-FR' ? 'Illustration conceptuelle : une idée centrale relie trois éléments.' : 'Conceptual illustration: one central idea connects three elements.') : '',
+        alt: r.id === 'S002' ? (locale === 'fr-FR' ? 'Illustration conceptuelle : une idée centrale relie trois éléments.' : 'Conceptual illustration: one central idea connects three elements.') : r.id === 'S004' ? (locale === 'fr-FR' ? 'Valeurs fictives : exemple A, 12 ; exemple B, 19 ; exemple C, 15. Démonstration uniquement, sans inférence scientifique.' : 'Fictional values: Example A, 12; Example B, 19; Example C, 15. Demonstration only, with no scientific inference.') : '',
         labels: r.id === 'S003' ? (locale === 'fr-FR' ? ['Sources', 'Structure', 'Relecture', 'Partage'] : ['Sources', 'Structure', 'Review', 'Share']) : r.id === 'S004' ? (locale === 'fr-FR' ? ['Exemple A', 'Exemple B', 'Exemple C'] : ['Example A', 'Example B', 'Example C']) : [],
         seriesNames: r.id === 'S004' ? [locale === 'fr-FR' ? 'Valeurs fictives' : 'Fictional values'] : [], review: 'draft' }];
     })),

@@ -4,6 +4,7 @@ import PptxGenJS from 'pptxgenjs';
 import { atomicWrite, exists, hash, hashFile, loadProject, readYaml, safePath, stamp } from './io.js';
 import { resolveChartData } from '../content/chart-data.js';
 import { drawSlide, validateGeometry } from '../layouts/index.js';
+import { finalizeAccessibility } from '../layouts/accessibility.js';
 import { validateContent, validatePptx, type Issue } from '../validation/index.js';
 import type { Deck, Project, Theme } from './model.js';
 
@@ -151,6 +152,7 @@ export async function buildProject(name: string, options: {locale?:string; autho
       if (issues.some(i=>i.severity==='error')) break;
       const file=path.join(staging,`presentation.${locale}.pptx`);
       await pptx.writeFile({fileName:file,compression:true});
+      await finalizeAccessibility(file,geometry.filter(slide=>slide.locale===locale));
       await validatePptx(file,deck.slides.length);
     }
     await atomicWrite(path.join(output,'validation.json'),JSON.stringify(issues,null,2));

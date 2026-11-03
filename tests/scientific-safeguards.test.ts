@@ -140,7 +140,7 @@ describe('fictional chart disclosure', () => {
     expect(translationRequest(deck, 'en-US', 'fr-FR', []).slides[0]).not.toHaveProperty('required_localized_fields');
     const target = localizedSchema.parse({
       title: 'Dati di esempio', message: 'Confronto illustrativo.', body: 'Grafico dimostrativo.', notes: 'Esempio senza inferenze scientifiche.',
-      caption: '', alt: 'Grafico di dati fittizi.', labels: ['Esempio A', 'Esempio B', 'Esempio C'], seriesNames: ['Valori fittizi'],
+      caption: '', alt: 'Valori fittizi: esempio A, 12; esempio B, 19; esempio C, 15. Solo dimostrazione, senza inferenze scientifiche.', labels: ['Esempio A', 'Esempio B', 'Esempio C'], seriesNames: ['Valori fittizi'],
       fictionalNotice: 'Dati fittizi — solo dimostrazione'
     });
     const request = path.join(sandbox, 'italian-notice.translation.yaml');

@@ -30,8 +30,8 @@ function sourceDeck() {
       [to]: { title: 'Conserver chaque étape', labels: ['Lire', 'Relire'] }
     } },
     { id: 'Chart', layout: 'chart', evidence: 'conceptual', chart: { fictional: true, series: [{ values: [8, 9] }] }, content: {
-      [from]: { title: 'Fictional example', labels: ['Group A', 'Group B'], seriesNames: ['Dose'] },
-      [to]: { title: 'Exemple fictif', labels: ['Groupe A', 'Groupe B'], seriesNames: ['Dose'] }
+      [from]: { title: 'Fictional example', alt: 'Fictional values: Group A 8, Group B 9. Demonstration only.', labels: ['Group A', 'Group B'], seriesNames: ['Dose'] },
+      [to]: { title: 'Exemple fictif', alt: 'Valeurs fictives : groupe A 8, groupe B 9. Démonstration uniquement.', labels: ['Groupe A', 'Groupe B'], seriesNames: ['Dose'] }
     } }
   ] });
 }
