@@ -85,7 +85,10 @@ describe('complete local workflow',()=>{
     const requestRun=await cli('translate','--project','first-run','--to','fr-FR');expect(requestRun.code,requestRun.output).toBe(0);
     const requestFile=(await fs.readdir(path.join(sandbox,'projects/first-run/content'))).find(name=>name.startsWith('translation-request.fr-FR.'))!;
     const requestPath=path.join(sandbox,'projects/first-run/content',requestFile),request=YAML.parse(await fs.readFile(requestPath,'utf8'));
-    const translated={...request,slides:request.slides.map((item:any)=>({id:item.id,source_fingerprint:item.source_fingerprint,translation:item.source}))};
+    const translated={...request,slides:request.slides.map((item:any)=>({id:item.id,source_fingerprint:item.source_fingerprint,translation:{
+      ...item.source,title:'Première observation',body:'Le plan fourni ne rapporte aucun résultat mesuré.',
+      notes:'Importé littéralement du plan fourni. Les affirmations scientifiques doivent être relues.'
+    }}))};
     const completed=path.join(sandbox,'translation-fr.yaml');await fs.writeFile(completed,YAML.stringify(translated));
     expect((await cli('translate','--project','first-run','--to','fr-FR','--file',completed)).code).toBe(0);
     expect((await cli('build','--project','first-run')).code).toBe(0);

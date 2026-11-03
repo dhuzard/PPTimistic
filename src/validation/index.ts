@@ -6,6 +6,7 @@ import { exists, hash, hashFile, readYaml, safePath } from '../core/io.js';
 import { type Deck, type Theme, type Project } from '../core/model.js';
 import { resolveChartData } from '../content/chart-data.js';
 import { consistency, fictionalDataDisclosure, translationFreshness } from '../localization/index.js';
+import { chartLabelsNeedingReview } from '../layouts/text-fit.js';
 
 export type Issue = { severity: 'error' | 'warning'; code: string; slide?: string; locale?: string; claim?: string; message: string };
 function luminance(hex: string) {
@@ -106,6 +107,8 @@ export async function validateContent(dir: string, config: Project, deck: Deck, 
       if (slide.chart) {
         const series=chartData?.series ?? slide.chart.series;
         if (!c.labels.length || series.some(s=>s.values.length!==c.labels.length)) add('chart-labels','Chart labels and values must have matching lengths.',slide.id,locale);
+        const crowded=chartLabelsNeedingReview(c.labels,13.333333-2*theme.margin,18);
+        if (crowded.length) add('chart-label-review',`Chart category label${crowded.length===1?'':'s'} ${crowded.map(index=>index+1).join(', ')} may wrap or overlap in a local render; shorten or inspect the full-size chart.`,slide.id,locale,'warning');
         if (c.seriesNames.length!==series.length) add('chart-series','Provide a localized name for every chart series.',slide.id,locale);
         if (slide.chart.fictional && !fictionalDataDisclosure(locale,c.fictionalNotice)) add('fictional-disclosure',`Provide fictionalNotice with a reviewed localized fictional-data disclosure for ${locale} before exporting fictional charts.`,slide.id,locale);
       }

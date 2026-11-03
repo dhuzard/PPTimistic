@@ -55,3 +55,19 @@ This records local verification of the CSV, translation-freshness, layout, deliv
 Visual inspection: the current English and French five-slide contact sheets, both full-size demo chart slides, and the full-size CSV-bound chart slide were opened. The CSV slide showed selected rows in the requested order, including a negative control value below the baseline; labels, values and source caption were legible, with no obvious clipping. This is visual inspection of PowerPoint output, separate from the automated PPTX XML/workbook and geometry checks. The uploaded Linux LibreOffice English/French contact sheets and both full-size chart slides from the [Ubuntu Node 24 CI job](https://github.com/dhuzard/PPTimistic/actions/runs/41653106623) were also opened: text and fictional-data labels were visible, with no obvious clipping. LibreOffice changes the chart gridline interval compared with PowerPoint. Other full-size Linux slides and accessibility behavior were not visually inspected.
 
 The fictional demo's French wording was reviewed against its English source and given per-slide source fingerprints. Its five slide IDs and accepted SVG remained unchanged. Generated decks, smoke project source, previews and delivery bundles remain ignored local files.
+
+## Accessibility and typography working-tree verification — 3 November 2026
+
+The v0.3 changes were integrated locally on Windows with Node 24.16.0 and PowerPoint 16.0. The six-job hosted matrix and its current Linux LibreOffice fixture were pending at this point.
+
+| Check | Result |
+| --- | --- |
+| `npm run check` after integration | TypeScript passed; 90 tests passed, one optional renderer test skipped |
+| Existing public demo rebuild and `npm run validate -- --project demo` | Both English and French PPTX files built; zero validation issues after authoring localized S004 chart descriptions |
+| Actual PowerPoint reopen and render | Both five-slide demo decks reopened and exported as PNG/PDF; the accessibility lane also reopened both languages and read native titles, descriptions and decorative flags through PowerPoint COM |
+| Public typography fixture | PowerPoint rendered 110 slides across three themes, three languages and a missing-font case; the matrix contains intentional overflow examples |
+| Text-fit behavior | The intentionally overfull body produced an overflow error; the intentionally long chart label produced a review warning in content validation |
+
+Visual inspection in this integration: I opened the current English and French demo contact sheets and both full-size S004 chart PNGs. The visible text, values and fictional-data notices were legible with no obvious clipping or overlap in those images. I also opened the public fixture's full-size English diagram (normal and missing-font) and intentionally long chart; the normal diagrams were readable and the long chart labels visibly overlapped. The accessibility lane separately opened final English S003 and French S004 PNGs. Other fixture images were rendered but not visually inspected here. These are visual observations, separate from geometry, OOXML and COM checks.
+
+PowerPoint's Accessibility Checker and Reading Order Pane were not inspected through their UI, and no screen reader was tested. The manual review remains open before claiming assistive-technology success. The accepted `idea.svg` was unchanged. The public fictional S004 chart gained English/French alt descriptions and an updated French source fingerprint; no private source or generated output was committed.

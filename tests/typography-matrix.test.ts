@@ -4,9 +4,10 @@ import path from 'node:path';
 import PptxGenJS from 'pptxgenjs';
 import JSZip from 'jszip';
 import YAML from 'yaml';
-import { layouts, themeSchema } from '../src/core/model.js';
+import { layouts, projectSchema, themeSchema } from '../src/core/model.js';
 import { drawSlide, validateGeometry } from '../src/layouts/index.js';
 import { chartLabelsNeedingReview } from '../src/layouts/text-fit.js';
+import { validateContent } from '../src/validation/index.js';
 import { fixtureLocales, fixtureThemes, typographyFixture } from './fixtures/typography.js';
 
 test('public typography matrix covers every layout, locale and theme without shrinking or expected overflow', async () => {
@@ -33,6 +34,16 @@ test('chart labels that substantially exceed their allocated width require revie
   expect(chartLabelsNeedingReview(['First example','Second example','Third example'],11.9)).toEqual([]);
   expect(chartLabelsNeedingReview(['Short','An exceptionally long category label that cannot reasonably fit under one chart column','Short'],11.9)).toEqual([1]);
   expect(chartLabelsNeedingReview([],11.9)).toEqual([]);
+});
+
+test('content validation reports crowded chart labels by slide and locale', async()=>{
+  const slides=typographyFixture();
+  const chart=slides.find(slide=>slide.layout==='chart')!;
+  chart.content['en-US'].labels[1]='An exceptionally long category label that cannot reasonably fit under one chart column';
+  const theme=themeSchema.parse(YAML.parse(await fs.readFile('config/themes/editorial-minimal.yaml','utf8')));
+  const project=projectSchema.parse({version:1,title:'Chart label review',source_locale:'en-US',output_locales:['en-US']});
+  const issues=await validateContent(process.cwd(),project,{version:1,slides:[chart]},theme);
+  expect(issues).toContainEqual(expect.objectContaining({code:'chart-label-review',severity:'warning',slide:chart.id,locale:'en-US'}));
 });
 
 

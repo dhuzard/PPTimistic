@@ -1,6 +1,6 @@
 {
   "name": "pptimistic",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Because making slides should feel this hopeful. Local-first, editable scientific presentations.",
   "license": "MIT",

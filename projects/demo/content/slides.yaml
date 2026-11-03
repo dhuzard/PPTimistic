@@ -115,7 +115,7 @@ slides:
         body: This editable chart demonstrates the format, not a research result.
         notes: This editable chart demonstrates the format, not a research result.
         caption: Fictional example data — no scientific inference.
-        alt: ""
+        alt: 'Fictional values: Example A, 12; Example B, 19; Example C, 15. Demonstration only, with no scientific inference.'
         labels:
           - Example A
           - Example B
@@ -129,7 +129,7 @@ slides:
         body: Ce graphique modifiable illustre le format, pas un résultat de recherche.
         notes: Ce graphique modifiable illustre le format, pas un résultat de recherche.
         caption: Données fictives — aucune inférence scientifique.
-        alt: ""
+        alt: 'Valeurs fictives : exemple A, 12 ; exemple B, 19 ; exemple C, 15. Démonstration uniquement, sans inférence scientifique.'
         labels:
           - Exemple A
           - Exemple B
@@ -137,7 +137,7 @@ slides:
         seriesNames:
           - Valeurs fictives
         review: draft
-        source_fingerprint: abad1f46115b22ca50886fc946618a99fd07c32124619e83dac963524f40b8f5
+        source_fingerprint: e88a063b80c233493de736ea632afce47b569f46edfb1411e015d9c7165e1d3b
     chart:
       fictional: true
       series:

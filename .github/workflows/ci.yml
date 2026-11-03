@@ -31,6 +31,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: public-visual-qa
-          path: qa-artifacts/
+          path: |
+            qa-artifacts/**/*.png
+            qa-artifacts/qa-manifest.json
           retention-days: 7
           if-no-files-found: error
