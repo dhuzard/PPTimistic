@@ -16,14 +16,21 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: npm
       - run: npm ci
-      - run: npm run check
-      - run: npm run demo -- --no-render
-      - run: npm run validate -- --project demo
       - name: Install Linux render tools
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install --yes libreoffice-impress-nogui poppler-utils
+      - run: npm run check
+      - run: npm run demo -- --no-render
+      - run: npm run validate -- --project demo
       - name: Render demo with LibreOffice
         if: runner.os == 'Linux'
         run: |
           npm run render -- --project demo --renderer libreoffice
           node -e "const fs=require('node:fs');for(const locale of ['en-US','fr-FR']){const latest=JSON.parse(fs.readFileSync('projects/demo/output/previews/'+locale+'/latest.json','utf8'));const files=fs.readdirSync(latest.folder);if(files.filter(f=>/^slide-\d+\.png$/.test(f)).length!==5||!files.includes('contact-sheet.png')||!files.includes('presentation.'+locale+'.pdf'))process.exit(1)}"
+      - name: Upload Linux preview images for visual review
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: previews-node-${{ matrix.node }}
+          path: projects/demo/output/previews/
+          if-no-files-found: error

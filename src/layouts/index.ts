@@ -1,34 +1,27 @@
 import PptxGenJS from 'pptxgenjs';
+import { measureText } from './text-fit.js';
 import sharp from 'sharp';
 import path from 'node:path';
 import { safePath } from '../core/io.js';
 import { type Slide, type Theme, type Localized } from '../core/model.js';
 import { type Issue } from '../validation/index.js';
+import { resolveChartData } from '../content/chart-data.js';
 import { fictionalDataDisclosure } from '../localization/index.js';
 
 export const WIDTH = 13.333333, HEIGHT = 7.5;
 export type Box = { x: number; y: number; w: number; h: number; role: string; font?: number; text?: string };
 export type SlideGeometry = { id: string; locale: string; boxes: Box[] };
 
-// Conservative, font-independent estimate. Never silently shrink text to fit.
+// Public compatibility helper; geometry uses the same glyph-aware estimate.
 export function textLines(text: string, width: number, font: number) {
-  const capacity = Math.max(1, Math.floor(width * 72 / (font * .53)));
-  return text.split('\n').reduce((sum,line) => {
-    let lines=1, used=0;
-    for (const word of line.split(/\s+/)) {
-      if (word.length>capacity) { lines += Math.floor(word.length/capacity); used=word.length%capacity; }
-      else if (used && used+word.length+1>capacity) { lines++; used=word.length; }
-      else used += word.length + (used ? 1 : 0);
-    }
-    return sum+lines;
-  },0);
+  return measureText(text, width, font).lines;
 }
 export function validateGeometry(g: SlideGeometry): Issue[] {
   const issues: Issue[]=[];
   const issue=(code: string,message: string) => issues.push({severity:'error',code,message,slide:g.id,locale:g.locale});
   for (const b of g.boxes) {
     if (b.x<0 || b.y<0 || b.x+b.w>WIDTH+.01 || b.y+b.h>HEIGHT+.01) issue('bounds',`${b.role} falls outside slide boundaries.`);
-    if (b.text && b.font && textLines(b.text,b.w,b.font)*b.font*1.22/72>b.h+.025) issue('text-overflow',`${b.role} may overflow. Shorten the text or change composition; font ${b.font} pt.`);
+    if (b.text && b.font && textLines(b.text,b.w,b.font)*b.font*1.22/72>b.h+.025) issue('text-overflow',`${b.role} may overflow (${textLines(b.text,b.w,b.font)} estimated lines; conservative glyph estimate). Shorten the text or change composition; font ${b.font} pt. Verify with a local render.`);
     if (b.font && b.font<16 && b.role!=='footer' && b.role!=='citation') issue('small-text',`${b.role} uses less than 16 pt.`);
   }
   for (let i=0;i<g.boxes.length;i++) for (let j=i+1;j<g.boxes.length;j++) {
@@ -99,9 +92,10 @@ export async function drawSlide(pptx: PptxGenJS, model: Slide, c: Localized, the
     text(c.message,m,1.95,inner,.75,20,'message',theme.secondary);
     const box={x:m,y:2.9,w:inner,h:3.05,role:'chart'};
     g.boxes.push(box);
-    slide.addChart(pptx.ChartType.bar,model.chart.series.map((s,i)=>({name:c.seriesNames[i],labels:c.labels,values:s.values})),{
+    const series=model.chart.fictional ? model.chart.series : (await resolveChartData(dir,model)).series;
+    slide.addChart(pptx.ChartType.bar,series.map((s,i)=>({name:c.seriesNames[i],labels:c.labels,values:s.values})),{
       ...box,barDir:'col',catAxisLabelFontFace:theme.font,catAxisLabelFontSize:18,valAxisLabelFontFace:theme.font,valAxisLabelFontSize:16,
-      chartColors:model.chart.series.length>1?[theme.accent,'849DA0','BBCACC']:[theme.accent],showLegend:model.chart.series.length>1,showTitle:false,showValue:true,dataLabelFormatCode:'General',
+      chartColors:series.length>1?[theme.accent,'849DA0','BBCACC']:[theme.accent],showLegend:series.length>1,showTitle:false,showValue:true,dataLabelFormatCode:'General',
       dataLabelPosition:'outEnd',dataLabelColor:theme.foreground,dataLabelFontFace:theme.font,dataLabelFontSize:16,
       valGridLine:{color:'E4E4E7'},
       catAxisLineColor:theme.secondary,valAxisLineColor:theme.background,

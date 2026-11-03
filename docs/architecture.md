@@ -68,6 +68,8 @@ slides:
 
 The array order controls slide order. IDs never depend on current position after authoring. Do not renumber existing IDs when inserting or moving a slide. `status` and localized `review` support `draft`, `review`, `approved`, `locked`; the optional global `locked` flag also protects the slide. `evidence` is `established`, `interpretation`, `hypothesis`, `conceptual` or `missing`. Citations are user-supplied literal strings, not automatically verified bibliography entries.
 
+Imported translations carry a `source_fingerprint` that records the source wording and shared chart/citation context reviewed for that locale. When those inputs change, validation marks the translation stale and blocks export until review. A layout-only change does not invalidate wording review. Older translations without this field are reported as untracked, rather than as verified current. The fingerprint records review context, not semantic equivalence.
+
 An optional claim link connects one visible source-language field to a locally extracted source excerpt. For example, after ingesting a document, replace the illustrative source ID and excerpt below with values from your own `content/sources.yaml` and `content/extracted/` files:
 
 ```yaml
@@ -80,7 +82,7 @@ claims:
     excerpt: Exact words from the retained source document.
 ```
 
-The source ID must be indexed and attached to the slide; the excerpt must match local extracted text after whitespace normalization. The original document and extracted text must retain their recorded hashes. Claim IDs must be unique within the presentation. The link records provenance, not scientific validity: a reviewer must still decide whether the excerpt supports the slide wording. `npm run claims -- --project NAME` prints a local report containing the linked slide field's text in every authored language, source and extraction paths and hashes, locator, excerpt hash and length, and validation status. It does not print the excerpt itself. Treat the report as potentially confidential because it contains slide text and source paths. Presenter notes include claim IDs and locators but not the extracted passage. For sources without usable extracted text, use ordinary citations and manual review until a suitable local extraction is available.
+The source ID must be indexed and attached to the slide; the excerpt must match local extracted text after whitespace normalization. The original document and extracted text must retain their recorded hashes. Claim IDs must be unique within the presentation. The link records provenance, not scientific validity: a reviewer must still decide whether the excerpt supports the slide wording. `npm run claims -- --project NAME` prints a local report containing the linked slide field's text in every authored language, source and extraction paths and hashes, locator, excerpt hash and length, and validation status. It also reports whether the current original and extracted bytes match ingestion-time hashes. `--write-markdown` writes `output/claims-report.md` with relative links to those local files. Neither report prints the excerpt itself. Treat reports as potentially confidential because they contain slide text and source paths. Presenter notes include claim IDs and locators but not the extracted passage. For sources without usable extracted text, use ordinary citations and manual review until a suitable local extraction is available.
 
 Layouts: `title`, `statement`, `text-image`, `full-image`, `diagram`, `workflow`, `chart`, `comparison`, `conclusion`. Diagram/workflow labels require 2–5 items. Comparison uses two `labels` as headings and `message`/`body` as the left/right explanations. Full-image uses a separate illustration and an editable title/caption; it is never a rasterized complete slide. Add table support by extending the schema and drawing native `addTable` objects; a dedicated table layout is not included yet.
 
@@ -109,7 +111,25 @@ source_refs: [SRC-your-ingested-source-id]
 # seriesNames: [Supplied measurement]
 ```
 
-These numbers illustrate the schema; they are not a scientific dataset. Actual charts require supplied data and a source reference. Fictional charts require `fictional: true`. The layout always prints an editable fictional-data disclosure independently of the author caption. English and French disclosures are built in. For another output locale, supply `fictionalNotice` in that slide's localized content, for example `fictionalNotice: Dati fittizi — solo dimostrazione` for `it-IT`. The build rejects a missing notice. A scientific reviewer must confirm any manually supplied wording. This validator checks dimensions, reference existence and provenance, but cannot verify that a human transcribed a source correctly.
+These numbers illustrate the schema; they are not a scientific dataset. Actual charts require supplied data and a source reference. Fictional charts require `fictional: true`. The layout always prints an editable fictional-data disclosure independently of the author caption. English and French disclosures are built in. For another output locale, supply `fictionalNotice` in that slide's localized content, for example `fictionalNotice: Dati fittizi — solo dimostrazione` for `it-IT`. The build rejects a missing notice. A scientific reviewer must confirm any manually supplied wording. For manually transcribed inline values, the validator checks dimensions, reference existence and provenance but cannot verify transcription accuracy.
+
+For a nonfictional chart backed by an ingested CSV, use an explicit binding instead of inline `series` values:
+
+```yaml
+chart:
+  fictional: false
+  data_ref: SRC-your-ingested-csv-id
+  binding:
+    source_sha256: <sha256 from content/sources.yaml>
+    category_column: Group
+    value_columns: [Response]
+    rows: [2, 3, 4] # 1-based CSV record numbers; row 1 is the header
+source_refs: [SRC-your-ingested-csv-id]
+# Source-locale labels must match selected Group cells in row order.
+# Source-locale seriesNames must match value_columns in order.
+```
+
+Column names and rows are selected explicitly; the original CSV bytes must match the recorded hash. PowerPoint chart data and its embedded editable workbook use the selected values directly, without computed transformations. Replacing or re-ingesting a changed CSV does not silently approve new chart values: review the data selection and update `source_sha256` deliberately. The source-language category and series labels are checked against the CSV, while translated labels remain positionally aligned and need human scientific review.
 
 ## Validation and rebuilds
 

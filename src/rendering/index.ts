@@ -4,8 +4,10 @@ import os from 'node:os';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import sharp from 'sharp';
-import { atomicWrite, exists, loadProject, root, safePath, stamp } from '../core/io.js';
+import { atomicWrite, exists, hash, loadProject, root, safePath, stamp } from '../core/io.js';
 import { artifactIssues, inspectArtifacts } from '../core/artifacts.js';
+import { fingerprints } from '../core/build.js';
+import { writeRevisionPreviews } from './revision-previews.js';
 
 const exec=promisify(execFile);
 export async function run(command:string,args:string[],timeout=120000) {
@@ -37,7 +39,7 @@ export async function contactSheet(folder:string, files:string[]) {
   await canvas.composite(tiles).png().toFile(path.join(folder,'contact-sheet.png'));
 }
 export async function renderProject(name:string,locale?:string,renderer='auto') {
-  const {dir,config}=await loadProject(name);
+  const {dir,config,deck:source,theme}=await loadProject(name);
   const tools=await capabilities();
   const selected=renderer==='auto' ? (tools.soffice&&tools.pdftoppm?'libreoffice':tools.powerpoint?'powerpoint':'none') : renderer;
   if (selected==='none' || (selected==='libreoffice' && (!tools.soffice||!tools.pdftoppm)) || (selected==='powerpoint' && !tools.powerpoint)) {
@@ -47,11 +49,16 @@ export async function renderProject(name:string,locale?:string,renderer='auto') 
   const freshnessIssues = artifactIssues(artifacts);
   if (freshnessIssues.length) throw new Error(freshnessIssues.map(i => `${i.locale}: ${i.message}`).join('\n'));
   const folders:string[]=[];
+  const slideStates=await fingerprints(dir,source,theme);
   for (const lang of locale?[locale]:config.output_locales) {
     const artifact = artifacts.find(a => a.locale === lang)!;
     const deck=await safePath(dir,`output/presentation.${lang}.pptx`);
     if (!(await exists(deck))) throw new Error(`Build ${lang} before rendering.`);
     const output=await safePath(dir,`output/previews/${lang}/${stamp()}-${crypto.randomUUID().slice(0,8)}`);
+    const latest=await safePath(dir,`output/previews/${lang}/latest.json`);
+    const previousFolder=await exists(latest) ? (JSON.parse(await fs.readFile(latest,'utf8')) as {folder:string}).folder : undefined;
+    // Keep all preview reads within this project's retained preview history.
+    const previous=previousFolder ? await safePath(dir,path.relative(dir,previousFolder)) : undefined;
     await fs.mkdir(output,{recursive:true});
     if (selected==='powerpoint') {
       await run('powershell.exe',['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',path.join(root,'src/rendering/powerpoint.ps1'),'-Deck',deck,'-Destination',output]);
@@ -68,8 +75,14 @@ export async function renderProject(name:string,locale?:string,renderer='auto') 
     }
     const files=(await fs.readdir(output)).filter(f=>/\.png$/i.test(f)).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
     if (!files.length) throw new Error('Renderer produced no slide images.');
+    await writeRevisionPreviews(output,files,source.slides.map(slide=>{
+      const state=slideStates[slide.id];
+      const {review: _review, source_fingerprint: _sourceFingerprint, ...authoredText}=slide.content[lang];
+      return {id:slide.id,fingerprint:hash(JSON.stringify([state.fingerprint,authoredText])),
+        protected:state.protected||state.locales[lang].protected,acceptedAsset:state.acceptedAsset};
+    }),lang,artifact.sha256!,previous);
     await contactSheet(output,files);
-    await atomicWrite(path.join(output,'render.json'),JSON.stringify({renderer:selected,pptx:deck,pptxSha256:artifact.sha256,sourceFingerprint:artifact.sourceFingerprint,artifactStatus:artifact.status,slides:files,visualInspection:'Not performed automatically. Open contact-sheet.png and individual previews.'},null,2));
+    await atomicWrite(path.join(output,'render.json'),JSON.stringify({renderer:selected,pptx:deck,pptxSha256:artifact.sha256,sourceFingerprint:artifact.sourceFingerprint,artifactStatus:artifact.status,slides:files,revisionPreviews:'revision-previews.json',visualInspection:'Not performed automatically. Open contact-sheet.png and individual previews.'},null,2));
     await atomicWrite(await safePath(dir,`output/previews/${lang}/latest.json`),JSON.stringify({folder:output},null,2));
     folders.push(output);
   }

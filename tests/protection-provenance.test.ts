@@ -7,6 +7,8 @@ import { promisify } from 'node:util';
 import { pathToFileURL } from 'node:url';
 import YAML from 'yaml';
 import { createHash } from 'node:crypto';
+import { translationSourceFingerprint } from '../src/localization/index.js';
+import type { Slide } from '../src/core/model.js';
 
 const exec=promisify(execFile), repo=process.cwd();
 let sandbox:string;
@@ -28,7 +30,10 @@ afterAll(async()=>{await fs.rm(sandbox,{recursive:true,force:true});});
 test('accepted images remain protected independently from draft slide text',async()=>{
   const d=await readDeck();const slide=d.slides.find((s:{id:string})=>s.id==='S002');
   expect(slide.visual.accepted).toBe(true);
-  slide.content['en-US'].body='A permitted draft edit.';await writeDeck(d);
+  slide.content['en-US'].body='A permitted draft edit.';
+  slide.content['fr-FR'].body='Une modification de brouillon autorisée.';
+  slide.content['fr-FR'].source_fingerprint=translationSourceFingerprint(slide as Slide,'en-US');
+  await writeDeck(d);
   expect((await cli('build','--project','demo')).code).toBe(0);
   const original=slide.visual.asset;
   const replacement='assets/reference/replacement.svg';await fs.copyFile(file(original),file(replacement));

@@ -4,18 +4,19 @@ import { Command } from 'commander';
 import { input, select } from '@inquirer/prompts';
 import { buildProject } from '../core/build.js';
 import { artifactIssues, inspectArtifacts } from '../core/artifacts.js';
+import { bundleProject } from '../core/bundle.js';
 import { doctor } from '../core/doctor.js';
 import { createProject, availableName } from '../core/projects.js';
-import { exists, hash, loadProject, projectDir, readYaml, safePath, stamp, writeYaml, atomicWrite, root } from '../core/io.js';
-import { localeSchema, localizedSchema, deckSchema, projectSchema } from '../core/model.js';
+import { exists, hash, hashFile, loadProject, projectDir, readYaml, safePath, stamp, writeYaml, atomicWrite, root } from '../core/io.js';
+import { localeSchema, projectSchema } from '../core/model.js';
 import { ingest } from '../content/ingest.js';
-import { translationRequest, consistency, fictionalDataDisclosure } from '../localization/index.js';
+import { translationRequest, importTranslations } from '../localization/index.js';
 import { validateContent, validatePptx } from '../validation/index.js';
 import { renderProject } from '../rendering/index.js';
 import { applyRevision } from '../feedback/index.js';
 import { prepareImages, attachImage } from '../images/index.js';
 
-const cli=new Command().name('pptimistic').description('Create editable presentations locally. No API key required.').version('0.1.0');
+const cli=new Command().name('pptimistic').description('Create editable presentations locally. No API key required.').version('0.2.0');
 const defaults=projectSchema.parse({title:'PPTimistic',...await readYaml(path.join(root,'config/defaults.yaml'))});
 const language=(value?:string) => (value??process.env.LC_ALL??process.env.LANG??Intl.DateTimeFormat().resolvedOptions().locale).toLowerCase().startsWith('fr')?'fr':'en';
 const split=(s:string)=>s.split(',').map(s=>s.trim()).filter(Boolean);
@@ -108,23 +109,51 @@ projectOption(cli.command('validate').description('Validate source, translations
   print({issues,errors:issues.filter(i=>i.severity==='error').length});
   if(issues.some(i=>i.severity==='error')) process.exitCode=1;
 });
-projectOption(cli.command('claims').description('Print a local read-only claim provenance report (excerpt text is withheld)')).action(async (_name,o)=>{
+projectOption(cli.command('claims').description('Print local claim provenance, slide text and source paths (excerpt text is withheld)'))
+  .option('--write-markdown','Write a local Markdown report with links to retained sources under output/')
+  .action(async (_name,o)=>{
   const {dir,config,deck,theme}=await loadProject(o.project);
   const sourceIndex=await safePath(dir,'content/sources.yaml');
   const sourceRecords=await exists(sourceIndex)?((await readYaml(sourceIndex)).sources as {id:string;path:string;sha256:string;extracted?:string;extracted_sha256?:string}[]):[];
   const issues=await validateContent(dir,config,deck,theme);
-  const report={project:o.project,source_locale:config.source_locale,claims:deck.slides.flatMap(slide=>(slide.claims??[]).map(claim=>{
+  async function integrity(relative?:string,recorded?:string) {
+    if(!relative||!recorded)return {status:'untracked' as const};
+    try {const file=await safePath(dir,relative);if(!await exists(file))return {status:'missing' as const};
+      const current_sha256=await hashFile(file);return {status:current_sha256===recorded?'current' as const:'changed' as const,current_sha256};}
+    catch {return {status:'missing' as const};}
+  }
+  const claims=[];
+  for(const slide of deck.slides) for(const claim of slide.claims??[]) {
     const source=sourceRecords.find(record=>record.id===claim.source_ref);
     const localizedText=Object.fromEntries(Object.entries(slide.content).map(([locale,content])=>[locale,content[claim.field]]));
     const validationIssues=issues.filter(issue=>issue.claim===claim.id||(issue.code==='source-integrity'&&issue.slide===slide.id));
-    return {slide_id:slide.id,claim_id:claim.id,field:claim.field,localized_text:localizedText,source_ref:claim.source_ref,source_path:source?.path,source_sha256:source?.sha256,extracted_path:source?.extracted,extracted_sha256:source?.extracted_sha256,locator:claim.locator,excerpt_sha256:hash(claim.excerpt),excerpt_length:[...claim.excerpt].length,validation_issues:validationIssues.map(({severity,code,message})=>({severity,code,message}))};
-  }))};
-  print(report);
+    claims.push({slide_id:slide.id,claim_id:claim.id,field:claim.field,localized_text:localizedText,source_ref:claim.source_ref,source_path:source?.path,source_sha256:source?.sha256,source_integrity:await integrity(source?.path,source?.sha256),extracted_path:source?.extracted,extracted_sha256:source?.extracted_sha256,extracted_integrity:await integrity(source?.extracted,source?.extracted_sha256),locator:claim.locator,excerpt_sha256:hash(claim.excerpt),excerpt_length:[...claim.excerpt].length,validation_issues:validationIssues.map(({severity,code,message})=>({severity,code,message}))});
+  }
+  const report={project:o.project,source_locale:config.source_locale,claims};
+  if(o.writeMarkdown) {
+    const destination=await safePath(dir,'output/claims-report.md');
+    const clean=(value:unknown)=>String(value??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('[','\\[').replaceAll(']','\\]').replaceAll('|','\\|').replace(/\r?\n/g,' ');
+    const link=async(relative?:string)=>{if(!relative)return '—';
+      try {const file=await safePath(dir,relative);if(!await exists(file))return 'missing';
+        const href=path.relative(path.dirname(destination),file).split(path.sep).map(encodeURIComponent).join('/');
+        return `[Open local file](${href})`;}
+      catch{return 'missing';}};
+    const lines=[`# Claim review — ${clean(o.project)}`,'','This local report contains slide text and source paths. Literal excerpt matching and file hashes do not establish scientific support. Excerpt text is withheld.','','| Slide | Claim | Field | Locator | Original | Extracted | Source state | Extraction state | Review issues |','| --- | --- | --- | --- | --- | --- | --- | --- | --- |'];
+    for(const claim of claims) lines.push(`| ${clean(claim.slide_id)} | ${clean(claim.claim_id)} | ${clean(claim.field)} | ${clean(claim.locator)} | ${await link(claim.source_path)} | ${await link(claim.extracted_path)} | ${claim.source_integrity.status} | ${claim.extracted_integrity.status} | ${clean(claim.validation_issues.map(issue=>issue.code).join(', ')||'none')} |`);
+    lines.push('','## Localized slide text','');
+    for(const claim of claims) {lines.push(`### ${clean(claim.slide_id)} / ${clean(claim.claim_id)}`,'');for(const [locale,value] of Object.entries(claim.localized_text))lines.push(`- ${clean(locale)}: ${clean(value)}`);lines.push('');}
+    await atomicWrite(destination,lines.join('\n'));
+    print({file:destination,claims:claims.length,errors:claims.filter(claim=>claim.validation_issues.some(issue=>issue.severity==='error')).length});
+  } else print(report);
   if(report.claims.some(claim=>claim.validation_issues.some(issue=>issue.severity==='error'))) process.exitCode=1;
 });
 projectOption(cli.command('render').description('Create real slide PNG previews, PDF and a contact sheet with a local renderer'))
   .option('--locale <locale>','Render one language').option('--renderer <name>','auto, libreoffice or powerpoint','auto')
   .action(async (_name,o)=>{if(!['auto','libreoffice','powerpoint'].includes(o.renderer))throw new Error('Unknown renderer');print(await renderProject(o.project,o.locale,o.renderer));});
+projectOption(cli.command('bundle').description('Package current PPTX files, validation and provenance for local delivery'))
+  .option('--previews <choice>','none or latest; latest requires current rendered previews','none')
+  .option('--input <path>','Explicitly include one project-relative original input under inputs/; repeat for more', (value:string, previous:string[])=>[...previous,value], [] as string[])
+  .action(async (_name,o)=>{print(await bundleProject(o.project,{previews:o.previews,inputs:o.input}));});
 projectOption(cli.command('ingest').description('Retain and extract local documents with hashes; does not invent slide summaries'))
   .option('--inputs <folder>','Folder to import (defaults to project inputs/)')
   .action(async (_name,o)=>{const {dir}=await loadProject(o.project);const records=await ingest(dir,o.inputs);print(records);if(records.some(r=>r.error))process.exitCode=1;});
@@ -134,22 +163,12 @@ projectOption(cli.command('translate').description('Export a manual translation 
     const to=localeSchema.parse(o.to),{dir,config,deck}=await loadProject(o.project);
     if(to===config.source_locale) throw new Error('Target must differ from source locale.');
     const request=translationRequest(deck,config.source_locale,to,config.glossary);
-    if(!o.file) {const dest=await safePath(dir,`content/translation-request.${to}.${stamp()}.yaml`);await writeYaml(dest,request);print(`No translation provider configured. Fill in translation fields in ${dest}, then rerun with --file. Missing slides: ${request.slides.length}`);return;}
+    if(!o.file) {const dest=await safePath(dir,`content/translation-request.${to}.${stamp()}.yaml`);await writeYaml(dest,request);print(`No translation provider configured. Review and fill translation fields in ${dest}, then rerun with --file. Slides requiring translation or review: ${request.slides.length}`);return;}
     const batch=await readYaml(path.resolve(o.file));
-    if(batch.to!==to||batch.from!==config.source_locale||!Array.isArray(batch.slides))throw new Error('Translation file must declare matching from/to locales and slides.');
-    const authorized=split(o.authorize??'');const seen=new Set<string>();
-    for(const entry of batch.slides) {
-      const s=deck.slides.find(s=>s.id===entry.id);if(!s||seen.has(entry.id))throw new Error(`Unknown or duplicate slide ID: ${entry.id}`);seen.add(entry.id);
-      const c=localizedSchema.parse(entry.translation);
-      if((s.locked||['approved','locked'].includes(s.status)||['approved','locked'].includes(s.content[to]?.review))&&!authorized.includes(s.id))throw new Error(`${s.id}: protected translation requires --authorize ${s.id}`);
-      const problems=consistency(s.content[config.source_locale],c,config.glossary);if(problems.length)throw new Error(`${s.id}: ${problems.join('; ')}`);
-      if(s.chart?.fictional&&!fictionalDataDisclosure(to,c.fictionalNotice))throw new Error(`${s.id}: fictional chart requires a reviewed localized fictionalNotice for ${to}; translation import was not saved.`);
-      s.content[to]=c;
-    }
-    if(deck.slides.some(s=>!s.content[to]))throw new Error('Translation import is incomplete; no changes saved.');
+    const translated=importTranslations(deck,config.source_locale,to,config.glossary,batch,split(o.authorize??''));
     const contentFile=await safePath(dir,config.content);
     await atomicWrite(path.join(dir,`feedback/${stamp()}.translation-before.yaml`),await fs.readFile(contentFile));
-    await writeYaml(contentFile,deckSchema.parse(deck));
+    await writeYaml(contentFile,translated);
     if(!config.output_locales.includes(to))config.output_locales.push(to);
     await writeYaml(path.join(dir,'project.yaml'),config);print(`Imported ${to}. Review translations, then build.`);
   });

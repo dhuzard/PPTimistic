@@ -4,7 +4,8 @@ import JSZip from 'jszip';
 import { XMLValidator } from 'fast-xml-parser';
 import { exists, hash, hashFile, readYaml, safePath } from '../core/io.js';
 import { type Deck, type Theme, type Project } from '../core/model.js';
-import { consistency, fictionalDataDisclosure } from '../localization/index.js';
+import { resolveChartData } from '../content/chart-data.js';
+import { consistency, fictionalDataDisclosure, translationFreshness } from '../localization/index.js';
 
 export type Issue = { severity: 'error' | 'warning'; code: string; slide?: string; locale?: string; claim?: string; message: string };
 function luminance(hex: string) {
@@ -72,20 +73,34 @@ export async function validateContent(dir: string, config: Project, deck: Deck, 
       const p = await safePath(dir,slide.visual.asset);
       if (!(await exists(p))) add('missing-asset',`Missing asset: ${slide.visual.asset}`,slide.id);
     } else if (['text-image','full-image'].includes(slide.layout)) add('placeholder','Illustration missing; an explicitly labeled placeholder will be used.',slide.id,undefined,'warning');
+    let chartData: Awaited<ReturnType<typeof resolveChartData>> | undefined;
     if (slide.layout === 'chart') {
       if (!slide.chart) add('chart','Chart layout requires chart data.',slide.id);
-      else if (!slide.chart.fictional && (!slide.chart.data_ref || !slide.source_refs.includes(slide.chart.data_ref))) add('chart-source','Empirical charts require data_ref referencing an ingested source.',slide.id);
+      else if (slide.chart.fictional) {
+        if (slide.chart.binding || !slide.chart.series.length) add('chart-data','Fictional charts require inline data and cannot bind a CSV.',slide.id);
+      } else {
+        try { chartData = await resolveChartData(dir,slide); }
+        catch (error) { add('chart-source',`Invalid CSV chart binding: ${(error as Error).message}`,slide.id); }
+        const original=slide.content[config.source_locale];
+        if (chartData && original && (JSON.stringify(original.labels)!==JSON.stringify(chartData.labels) || JSON.stringify(original.seriesNames)!==JSON.stringify(slide.chart.binding!.value_columns))) add('chart-source-labels','Source-language chart labels and series names must match the selected CSV categories and column headers.',slide.id,config.source_locale);
+      }
     }
     for (const locale of locales) {
       const c = slide.content[locale];
       if (!c) { add('missing-translation',`Translation is missing. Run translate --to ${locale} or supply content manually.`,slide.id,locale); continue; }
       const source = slide.content[config.source_locale];
+      if (source && locale !== config.source_locale) {
+        const freshness = translationFreshness(slide, config.source_locale, locale);
+        if (freshness.state === 'stale') add('translation-stale', `Source wording or shared chart/diagram content changed. This translation requires review; its stored approval is not current. Run translate --to ${locale}.`, slide.id, locale);
+        if (freshness.state === 'untracked') add('translation-untracked', `No reviewed source fingerprint is recorded. Translation freshness and any stored approval are unverified. Run translate --to ${locale} to prepare a review request.`, slide.id, locale, 'warning');
+      }
       if (source && locale !== config.source_locale) for (const msg of consistency(source,c,config.glossary)) add('translation-consistency',msg,slide.id,locale);
       for (const key of ['labels', 'seriesNames'] as const) if (c[key].some(value => !value.trim())) add('empty-label',`${key}: every array element must contain localized text.`,slide.id,locale);
       if (['diagram','workflow'].includes(slide.layout) && (c.labels.length<2 || c.labels.length>5)) add('diagram-labels','Use 2–5 labels for this layout.',slide.id,locale);
       if (slide.chart) {
-        if (!c.labels.length || slide.chart.series.some(s=>s.values.length!==c.labels.length)) add('chart-labels','Chart labels and values must have matching lengths.',slide.id,locale);
-        if (c.seriesNames.length!==slide.chart.series.length) add('chart-series','Provide a localized name for every chart series.',slide.id,locale);
+        const series=chartData?.series ?? slide.chart.series;
+        if (!c.labels.length || series.some(s=>s.values.length!==c.labels.length)) add('chart-labels','Chart labels and values must have matching lengths.',slide.id,locale);
+        if (c.seriesNames.length!==series.length) add('chart-series','Provide a localized name for every chart series.',slide.id,locale);
         if (slide.chart.fictional && !fictionalDataDisclosure(locale,c.fictionalNotice)) add('fictional-disclosure',`Provide fictionalNotice with a reviewed localized fictional-data disclosure for ${locale} before exporting fictional charts.`,slide.id,locale);
       }
       if (slide.visual?.asset && !c.alt) add('alt-text','Add a localized accessible image description.',slide.id,locale,'warning');

@@ -8,6 +8,7 @@ export const localizedSchema = z.object({
   title: z.string().min(1), message: z.string().default(''), body: z.string().default(''),
   notes: z.string().default(''), caption: z.string().default(''), alt: z.string().default(''),
   fictionalNotice: z.string().optional(),
+  source_fingerprint: z.string().regex(/^[a-f0-9]{64}$/).optional(),
   labels: z.array(z.string()).default([]), seriesNames: z.array(z.string()).default([]),
   review: z.enum(['draft', 'review', 'approved', 'locked']).default('draft')
 }).strict();
@@ -29,7 +30,12 @@ export const slideSchema = z.object({
   visual: z.object({ asset: z.string().optional(), brief: z.string().default(''), accepted: z.boolean().default(false) }).strict().optional(),
   chart: z.object({
     fictional: z.boolean().default(false), data_ref: z.string().optional(),
-    series: z.array(z.object({ values: z.array(z.number().finite()).min(1) })).min(1)
+    series: z.array(z.object({ values: z.array(z.number().finite()).min(1) })).default([]),
+    binding: z.object({
+      source_sha256: z.string().regex(/^[a-f0-9]{64}$/),
+      category_column: z.string().min(1), value_columns: z.array(z.string().min(1)).min(1),
+      rows: z.array(z.number().int().min(2)).min(1)
+    }).strict().optional()
   }).strict().optional()
 }).strict();
 export const deckSchema = z.object({ version: z.literal(1), slides: z.array(slideSchema).min(1) }).strict();

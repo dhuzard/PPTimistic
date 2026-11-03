@@ -1,6 +1,6 @@
 {
   "name": "pptimistic",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Because making slides should feel this hopeful. Local-first, editable scientific presentations.",
   "license": "MIT",
@@ -17,6 +17,7 @@
     "translate": "tsx src/cli/index.ts translate",
     "validate": "tsx src/cli/index.ts validate",
     "claims": "tsx src/cli/index.ts claims",
+    "bundle": "tsx src/cli/index.ts bundle",
     "render": "tsx src/cli/index.ts render",
     "revise": "tsx src/cli/index.ts revise",
     "ingest": "tsx src/cli/index.ts ingest",

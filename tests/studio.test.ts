@@ -121,7 +121,8 @@ describe('complete local workflow',()=>{
     await fs.writeFile(patch,YAML.stringify({slide:'S002',locale:'en-US',category:'content',message:'Shorten the supporting explanation.',patch:{body:'Leave space to think.'}}));
     expect((await cli('revise','--project','demo','--file',patch)).code).toBe(0);
     const d=await deck();expect(d.slides[1].content['en-US'].body).toBe('Leave space to think.');expect(d.slides[1].content['en-US'].message).toBe(original.slides[1].content['en-US'].message);expect(d.slides[2]).toEqual(original.slides[2]);expect(d.slides[1].id).toBe('S002');
-    expect((await cli('build','--project','demo')).code).toBe(0);await save(original);
+    const stale=await cli('build','--project','demo');expect(stale.code).not.toBe(0);expect(stale.output).toContain('requires review');
+    expect((await cli('build','--project','demo','--locale','en-US')).code).toBe(0);await save(original);
   });
   test('locked slides resist source edits, unlock bypass, and structured revisions',async()=>{
     const d=await deck(),original=structuredClone(d);d.slides[0].locked=true;d.slides[0].status='locked';await save(d);
@@ -171,7 +172,7 @@ describe('complete local workflow',()=>{
     const original=await deck(),d=structuredClone(original);d.slides[1].visual.asset='assets/missing.png';await save(d);
     expect((await cli('build','--project','demo')).output).toContain('Missing asset');
     const dense=structuredClone(original);dense.slides[1].content['en-US'].body='Too much text. '.repeat(150);await save(dense);
-    expect((await cli('build','--project','demo')).output).toContain('overflow');await save(original);
+    expect((await cli('build','--project','demo','--locale','en-US')).output).toContain('overflow');await save(original);
     const input=path.join(sandbox,'projects/plan/inputs/plan.md');const backup=await fs.readFile(input);await fs.appendFile(input,'\nChanged source.');
     expect((await cli('validate','--project','plan')).output).toContain('Source missing or changed');await fs.writeFile(input,backup);
   });

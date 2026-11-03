@@ -44,6 +44,23 @@ beforeAll(async()=>{
 afterAll(async()=>{await fs.rm(sandbox,{recursive:true,force:true});});
 
 describe('local claim report',()=>{
+  test('writes clickable local paths and flags changed source bytes without disclosing excerpts',async()=>{
+    const first=await cli('claims','--project','claim-demo','--write-markdown');
+    expect(first.code).toBe(0);
+    const file=(JSON.parse(first.output) as {file:string}).file;
+    const markdown=await fs.readFile(file,'utf8');
+    expect(markdown).toContain('[Open local file](../inputs/evidence.txt)');
+    expect(markdown).toContain('| current | current |');
+    expect(markdown).not.toContain(excerpt);
+    const source=projectFile('inputs/evidence.txt'),original=await fs.readFile(source);
+    try {
+      await fs.appendFile(source,'Changed after ingestion');
+      const changed=await cli('claims','--project','claim-demo','--write-markdown');
+      expect(changed.code).not.toBe(0);
+      expect(await fs.readFile(file,'utf8')).toContain('| changed | current |');
+    } finally {await fs.writeFile(source,original);}
+  });
+
   test('reports provenance and validation without excerpt text; presenter notes link claim ID and locator',async()=>{
     const result=await cli('claims','--project','claim-demo');
     expect(result.code).toBe(0);

@@ -1,4 +1,5 @@
-import { type Deck, type Localized } from '../core/model.js';
+import { createHash } from 'node:crypto';
+import { deckSchema, localizedSchema, type Deck, type Localized, type Slide } from '../core/model.js';
 
 export interface TranslationProvider {
   name: string;
@@ -41,11 +42,60 @@ export function consistency(source: Localized, translated: Localized, glossary: 
   }
   return issues;
 }
+/** Review metadata never participates in the wording that was reviewed. */
+export function translationSourceFingerprint(slide: Slide, from: string): string {
+  const source = slide.content[from];
+  if (!source) throw new Error(`${slide.id}: missing source content for ${from}`);
+  const { review: _review, source_fingerprint: _fingerprint, ...text } = source;
+  // Use a fixed field order, independently of the order of keys in authored YAML.
+  const wording = Object.fromEntries(Object.entries(text).sort(([a], [b]) => a.localeCompare(b)));
+  return createHash('sha256').update(JSON.stringify({ version: 1, from, wording,
+    chart: slide.chart ?? null, citations: slide.citations })).digest('hex');
+}
+
+export function translationFreshness(slide: Slide, from: string, to: string) {
+  const source_fingerprint = translationSourceFingerprint(slide, from);
+  const target = slide.content[to];
+  const state = !target ? 'missing' : !target.source_fingerprint ? 'untracked'
+    : target.source_fingerprint === source_fingerprint ? 'current' : 'stale';
+  // A stored approval never represents approval of different source wording.
+  // Keep the original protection state intact; this is the effective review status.
+  return { state, review: state === 'current' ? target.review : 'review' as const, source_fingerprint };
+}
+
+/** Validate the entire batch before returning an updated copy for persistence. */
+export function importTranslations(deck: Deck, from: string, to: string, glossary: string[], batch: unknown, authorized: string[] = []): Deck {
+  if (from === to) throw new Error('Target must differ from source locale.');
+  const request = batch as { from?: unknown; to?: unknown; slides?: unknown } | null;
+  if (!request || request.to !== to || request.from !== from || !Array.isArray(request.slides)) throw new Error('Translation file must declare matching from/to locales and slides.');
+  const updated = structuredClone(deck);
+  const seen = new Set<string>();
+  for (const item of request.slides) {
+    const entry = item as { id?: unknown; translation?: unknown; source_fingerprint?: unknown } | null;
+    const slide = updated.slides.find(s => s.id === entry?.id);
+    if (!slide || seen.has(slide.id)) throw new Error(`Unknown or duplicate slide ID: ${entry?.id}`);
+    seen.add(slide.id);
+    const target = localizedSchema.parse(entry!.translation);
+    if ((slide.locked || ['approved', 'locked'].includes(slide.status) || ['approved', 'locked'].includes(slide.content[to]?.review)) && !authorized.includes(slide.id)) throw new Error(`${slide.id}: protected translation requires --authorize ${slide.id}`);
+    const fingerprint = translationSourceFingerprint(slide, from);
+    if (entry!.source_fingerprint !== undefined && entry!.source_fingerprint !== fingerprint) throw new Error(`${slide.id}: source changed since this translation request; prepare a new request and review the translation.`);
+    const problems = consistency(slide.content[from], target, glossary);
+    if (problems.length) throw new Error(`${slide.id}: ${problems.join('; ')}`);
+    if (slide.chart?.fictional && !fictionalDataDisclosure(to, target.fictionalNotice)) throw new Error(`${slide.id}: fictional chart requires a reviewed localized fictionalNotice for ${to}; translation import was not saved.`);
+    slide.content[to] = { ...target, source_fingerprint: fingerprint };
+  }
+  if (updated.slides.some(s => !s.content[to])) throw new Error('Translation import is incomplete; no changes saved.');
+  return deckSchema.parse(updated);
+}
+
 export function translationRequest(deck: Deck, from: string, to: string, glossary: string[]) {
   return {
     version: 1, from, to, glossary,
-    instructions: 'Supply a complete localized object per slide. Preserve stable IDs, numbers, units, references and protected terms. For fictional charts outside English/French, supply fictionalNotice with a reviewed localized fictional-data disclosure. No network request has been made. Import via translate --file FILE.',
-    slides: deck.slides.filter(s => !s.content[to]).map(s => ({ id: s.id, source: s.content[from], translation: null,
+    instructions: 'Supply a complete localized object for each listed slide. Retain source_fingerprint so import can reject a request after its source changes. Preserve stable IDs, numbers, units, references and protected terms. Existing translations are supplied for review, never as automatic translations. For fictional charts outside English/French, supply fictionalNotice with a reviewed localized fictional-data disclosure. No network request has been made. Import via translate --file FILE.',
+    slides: deck.slides.filter(s => translationFreshness(s, from, to).state !== 'current').map(s => ({ id: s.id, source: s.content[from], translation: null,
+      source_fingerprint: translationSourceFingerprint(s, from), freshness: translationFreshness(s, from, to).state,
+      shared: { chart: s.chart ?? null, citations: s.citations },
+      ...(s.content[to] ? { existing_translation: { ...s.content[to], review: 'review' } } : {}),
       ...(s.chart?.fictional && !fictionalDataDisclosure(to) ? { required_localized_fields: ['fictionalNotice'] } : {}) }))
   };
 }

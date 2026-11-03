@@ -119,7 +119,9 @@ describe('fictional chart disclosure', () => {
     chart.content['it-IT'].fictionalNotice = '   ';
     expect(await validateContent(sandbox, { ...config, output_locales: ['it-IT'] }, { version: 1, slides: [chart] }, theme)).toContainEqual(expect.objectContaining({ code: 'fictional-disclosure' }));
     chart.content['it-IT'].fictionalNotice = 'Dati fittizi — solo dimostrazione';
-    expect(await validateContent(sandbox, { ...config, output_locales: ['it-IT'] }, { version: 1, slides: [chart] }, theme)).toEqual([]);
+    const reviewedNotice = await validateContent(sandbox, { ...config, output_locales: ['it-IT'] }, { version: 1, slides: [chart] }, theme);
+    expect(reviewedNotice.filter(issue => issue.severity === 'error')).toEqual([]);
+    expect(reviewedNotice).toContainEqual(expect.objectContaining({ code: 'translation-untracked', severity: 'warning' }));
     expect(fictionalDataDisclosure('it-IT', '  Dati fittizi  ')).toBe('Dati fittizi');
     expect(fictionalDataDisclosure('en-US', 'Author edited text')).toBe('Fictional data — demonstration only');
     expect(fictionalDataDisclosure('fr-FR', 'Author edited text')).toBe('Données fictives — démonstration uniquement');

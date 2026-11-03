@@ -29,7 +29,7 @@ async function cli(...args: string[]) {
 beforeAll(async () => {
   sandbox = await fs.mkdtemp(path.join(os.tmpdir(), 'pptimistic-artifact-test-'));
   await fs.cp(path.join(repo, 'config'), path.join(sandbox, 'config'), { recursive: true });
-  expect((await cli('setup', '--yes', '--project', 'freshness', '--no-render')).code).toBe(0);
+  expect((await cli('setup', '--yes', '--project', 'freshness', '--locales', 'en-US', '--no-render')).code).toBe(0);
 }, 60000);
 
 afterAll(async () => { await fs.rm(sandbox, { recursive: true, force: true }); });
@@ -60,10 +60,12 @@ test('delivery validation distinguishes stale, modified, and missing PPTX from s
   expect((await cli('validate', '--project', 'freshness')).code).toBe(0);
   changed.slides[0].citations = ['Review fixture'];
   await fs.writeFile(source(), YAML.stringify(changed));
+  const secondStale = await cli('validate', '--project', 'freshness');
+  expect(secondStale.code).not.toBe(0);
+  expect(secondStale.output).toContain('stale-output');
   expect((await cli('build', '--project', 'freshness', '--locale', 'en-US')).code).toBe(0);
   const current = await cli('validate', '--project', 'freshness');
-  expect(current.code).not.toBe(0);
-  expect(current.output).toContain('stale-output');
+  expect(current.code).toBe(0);
   expect((await cli('validate', '--project', 'freshness', '--source-only')).code).toBe(0);
 
   await fs.appendFile(output('en-US'), 'external-edit');

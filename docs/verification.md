@@ -38,3 +38,20 @@ Visual inspection was performed on both five-slide English/French contact sheets
 The Italian fixture was used to exercise export and layout. Its wording was not independently reviewed for scientific translation fidelity.
 
 The fictional demo source and accepted SVG were not changed. Code changes alter the rendering of S004; no authored slide IDs changed. Generated PPTX files and previews remain local in ignored project output folders.
+
+## Next-release working-tree verification — 3 November 2026
+
+This records the CSV, translation-freshness, layout, delivery-bundle and claim-review implementation before hosted CI. The local environment remained Windows with Node 24.16.0, PowerPoint and Poppler; LibreOffice was unavailable.
+
+| Check | Result |
+| --- | --- |
+| `npm run check` | TypeScript passed; 80 tests passed across 13 files, one LibreOffice fixture skipped locally |
+| Demo build and `validate` | Five-slide English/French PPTX files built with zero issues and zero errors |
+| CSV-bound chart smoke project | Exact selected CSV values built into an editable chart and workbook; `validate` reported zero issues |
+| PowerPoint rendering | English/French demo and English CSV chart produced PNG slides and PDFs |
+| Local delivery bundle | Current demo PPTX files and previews copied into 17 verified files; no original inputs included |
+| `git diff --check` | Passed |
+
+Visual inspection: the current English and French five-slide contact sheets, both full-size demo chart slides, and the full-size CSV-bound chart slide were opened. The CSV slide showed selected rows in the requested order, including a negative control value below the baseline; labels, values and source caption were legible, with no obvious clipping. This is visual inspection of PowerPoint output, separate from the automated PPTX XML/workbook and geometry checks. LibreOffice images had not been inspected locally; the expanded Linux CI uploads its previews for a later visual review.
+
+The fictional demo's French wording was reviewed against its English source and given per-slide source fingerprints. Its five slide IDs and accepted SVG remained unchanged. Generated decks, smoke project source, previews and delivery bundles remain ignored local files.

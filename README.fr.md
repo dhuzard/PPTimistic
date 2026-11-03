@@ -65,7 +65,7 @@ Les documents sont copiés et extraits localement avec leur provenance. **L'impo
 
 Markdown, TXT, DOCX, PDF textuels, CSV et images usuelles sont pris en charge. Les formats non reconnus sont conservés et signalés. Un plan Markdown unique peut être importé avec `--from-plan --locales fr-FR --source fr-FR` : chaque titre `##` devient une diapositive, sans réécriture du texte. Voir [l'exemple](examples/slide-plan.md).
 
-Pour relier une affirmation à un passage précis, ajoutez une entrée `claims` facultative vers un extrait de document importé, puis lancez `npm run claims -- --project recherche`. Le rapport local indique l'ID de la source, son chemin, son empreinte, le repère et les éventuelles erreurs, sans afficher l'extrait. Voir le [schéma des affirmations](docs/architecture.md). La pertinence scientifique du passage doit être relue par une personne compétente.
+Pour relier une affirmation à un passage précis, ajoutez une entrée `claims` facultative vers un extrait de document importé, puis lancez `npm run claims -- --project recherche`. Le rapport local indique l'ID de la source, son chemin, son empreinte, le repère et les éventuelles erreurs, sans afficher l'extrait. Voir le [schéma des affirmations](docs/architecture.md). La pertinence scientifique du passage doit être relue par une personne compétente. `npm run claims -- --project recherche --write-markdown` crée aussi `output/claims-report.md` avec des liens vers les fichiers locaux et l'état de leurs empreintes. Ce rapport contient le texte des diapositives et des chemins privés.
 
 ## Illustrations et traductions
 
@@ -90,6 +90,8 @@ npm run revise -- --project recherche --slide S002 --message "Réduis le texte s
 Le retour est consigné pour votre agent ; la commande ne prétend pas interpréter seule le langage naturel. Demandez ensuite : « Applique le retour sur S002, conserve les diapositives approuvées, puis reconstruis. » Les modifications de contenus approuvés ou verrouillés nécessitent une autorisation explicite. Les anciennes sorties sont conservées.
 
 Les modifications effectuées directement dans PowerPoint **ne mettent pas à jour le YAML**. Un fichier PowerPoint modifié extérieurement n'est pas écrasé. Gardez une copie et demandez à l'agent de réconcilier les changements avec les sources avant de reconstruire.
+
+Pour préparer une livraison locale, lancez `npm run bundle -- --project recherche`. La commande vérifie les PPTX et crée `output/deliveries/<id>/` avec les présentations, les résultats de validation et un manifeste d'empreintes. `--previews latest` ajoute les aperçus récents et vérifiés. Les documents originaux sont exclus, sauf si vous nommez chaque fichier avec `--input inputs/nom-du-fichier`. Vérifiez le dossier avant de le partager.
 
 ## Aide
 

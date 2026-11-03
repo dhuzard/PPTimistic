@@ -2,11 +2,12 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import PptxGenJS from 'pptxgenjs';
 import { atomicWrite, exists, hash, hashFile, loadProject, readYaml, safePath, stamp } from './io.js';
+import { resolveChartData } from '../content/chart-data.js';
 import { drawSlide, validateGeometry } from '../layouts/index.js';
 import { validateContent, validatePptx, type Issue } from '../validation/index.js';
 import type { Deck, Project, Theme } from './model.js';
 
-export type BuildProvenance = { buildId:string; locale:string; pptxSha256:string; sourceFingerprint:string; sources:Record<string,string>; sourceRecords:Record<string,{path:string; sha256:string; recordedSha256:string; extracted?:{path:string; sha256:string; recordedSha256:string}}> ; assets:Record<string,{path:string; sha256:string}>; prompts:Record<string,{path:string; sha256:string; role:'preparation-or-reuse'; generationProvenance:'unavailable'}> };
+export type BuildProvenance = { chartSelections?:Record<string,Awaited<ReturnType<typeof resolveChartData>>['selection']>; buildId:string; locale:string; pptxSha256:string; sourceFingerprint:string; sources:Record<string,string>; sourceRecords:Record<string,{path:string; sha256:string; recordedSha256:string; extracted?:{path:string; sha256:string; recordedSha256:string}}> ; assets:Record<string,{path:string; sha256:string}>; prompts:Record<string,{path:string; sha256:string; role:'preparation-or-reuse'; generationProvenance:'unavailable'}> };
 export type BuildState = { version?:2; files: Record<string,string>; slides: Record<string,{ fingerprint:string; protected:boolean; acceptedAsset?:{path:string; sha256:string}; locales: Record<string,{ fingerprint:string; protected:boolean }> }>; provenance?:Record<string,BuildProvenance> };
 async function sourceEvidence(dir:string,deck:Deck) {
   const index=await safePath(dir,'content/sources.yaml');
@@ -133,6 +134,8 @@ export async function buildProject(name: string, options: {locale?:string; autho
       }
     }
   }
+  const chartSelections: NonNullable<BuildProvenance['chartSelections']>={};
+  for (const slide of deck.slides) if (slide.layout==='chart' && slide.chart && !slide.chart.fictional) chartSelections[slide.id]=(await resolveChartData(dir,slide)).selection;
   const staging=path.join(output,'.staging',buildId);
   await fs.mkdir(staging,{recursive:true});
   const geometry=[];
@@ -165,7 +168,7 @@ export async function buildProject(name: string, options: {locale?:string; autho
       }
       await fs.rename(path.join(staging,fileName),dest);
       state.files[locale]=await hashFile(dest);
-      state.provenance![locale]={buildId,locale,pptxSha256:state.files[locale],sourceFingerprint:await sourceFingerprint(dir,config,deck,theme,locale),sources,sourceRecords:evidence.records,assets,prompts};
+      state.provenance![locale]={buildId,locale,pptxSha256:state.files[locale],sourceFingerprint:await sourceFingerprint(dir,config,deck,theme,locale),sources,sourceRecords:evidence.records,assets,prompts,chartSelections};
     }
     const changed=deck.slides.filter(s=>!previous?.slides[s.id] || JSON.stringify(previous.slides[s.id])!==JSON.stringify(next[s.id])).map(s=>s.id);
     const report={buildId,locales,changedSlides:changed,removedSlides:Object.keys(previous?.slides??{}).filter(id=>!next[id]),issues,

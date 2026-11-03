@@ -70,6 +70,7 @@ npm run new -- --project planned-talk --yes --inputs "path/to/plan-folder" --fro
 Large blocks of text fail layout validation instead of being silently shrunk. An agent can refine the source with your editorial approval.
 
 For claims that need a precise source trail, add an optional `claims` entry linking a visible slide field to an excerpt from an ingested document, then run `npm run claims -- --project research-talk`. The local report shows the source ID, path, hash, locator and review issues without printing the excerpt itself. See the [claim schema](docs/architecture.md). A matching excerpt still needs human scientific review.
+Use `npm run claims -- --project research-talk --write-markdown` for a local `output/claims-report.md` with links to retained source files and explicit source/extraction hash states. The report includes slide text and paths, so treat it as private.
 
 ## Illustrations, translations and revisions
 
@@ -92,6 +93,8 @@ npm run revise -- --project research-talk --slide S002 --message "Less text; pre
 ```
 
 Feedback is logged for your coding agent; the CLI does not pretend to interpret natural language. Say, “Apply the feedback on S002 and rebuild; keep approved slides unchanged.” Structured revisions are supported too; see [the workflow guide](docs/workflows.md). Approved or locked content requires explicit authorization for changes. Each successful rebuild keeps earlier output versions. Manually modified PPTX files are detected and never overwritten.
+
+For local delivery, run `npm run bundle -- --project research-talk`. It verifies current PPTX files and creates `output/deliveries/<id>/` with the decks, validation results and a hash manifest. Add `--previews latest` to include current rendered previews. Original inputs are excluded unless you name each file with `--input inputs/filename`; inspect the bundle before sharing it.
 
 ## Help and troubleshooting
 
