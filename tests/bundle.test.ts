@@ -81,7 +81,7 @@ test('latest previews accept PowerPoint and LibreOffice PDF names and verify sou
     await fs.writeFile(path.join(project, 'output/previews', locale, 'latest.json'), JSON.stringify({ folder }));
   }
   const run = await cli('bundle', '--project', 'delivery', '--previews', 'latest');
-  expect(run.code).toBe(0);
+  expect(run.code, run.output).toBe(0);
   const result = JSON.parse(run.output) as { folder: string };
   for (const locale of ['en-US', 'fr-FR']) {
     expect(await fs.readFile(path.join(result.folder, 'previews', locale, 'presentation.pdf'), 'utf8')).toContain('fixture presentation');
