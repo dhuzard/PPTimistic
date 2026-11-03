@@ -7,14 +7,24 @@ export const layouts = ['title', 'statement', 'text-image', 'full-image', 'diagr
 export const localizedSchema = z.object({
   title: z.string().min(1), message: z.string().default(''), body: z.string().default(''),
   notes: z.string().default(''), caption: z.string().default(''), alt: z.string().default(''),
+  fictionalNotice: z.string().optional(),
   labels: z.array(z.string()).default([]), seriesNames: z.array(z.string()).default([]),
   review: z.enum(['draft', 'review', 'approved', 'locked']).default('draft')
+}).strict();
+// Explicit traceability metadata; these links do not assert scientific validity.
+export const claimSchema = z.object({
+  id: z.string().regex(/^[A-Za-z][A-Za-z0-9_-]*$/),
+  field: z.enum(['title', 'message', 'body', 'caption']),
+  source_ref: z.string().refine(value => Boolean(value.trim()), 'Source reference must not be blank'),
+  excerpt: z.string().refine(value => Boolean(value.trim()), 'Source excerpt must not be blank'),
+  locator: z.string().refine(value => Boolean(value.trim()), 'Locator must not be blank').optional()
 }).strict();
 export const slideSchema = z.object({
   id: z.string().regex(/^[A-Za-z][A-Za-z0-9_-]*$/),
   layout: z.enum(layouts), status: z.enum(['draft', 'review', 'approved', 'locked']).default('draft'),
   locked: z.boolean().default(false), evidence: z.enum(['established', 'interpretation', 'hypothesis', 'conceptual', 'missing']).default('missing'),
   source_refs: z.array(z.string()).default([]), citations: z.array(z.string()).default([]),
+  claims: z.array(claimSchema).optional(),
   content: z.record(localeSchema, localizedSchema),
   visual: z.object({ asset: z.string().optional(), brief: z.string().default(''), accepted: z.boolean().default(false) }).strict().optional(),
   chart: z.object({
@@ -37,6 +47,7 @@ export const themeSchema = z.object({
   margin: z.number().min(0.5).max(0.9)
 }).strict();
 export type Slide = z.infer<typeof slideSchema>;
+export type Claim = z.infer<typeof claimSchema>;
 export type Localized = z.infer<typeof localizedSchema>;
 export type Project = z.infer<typeof projectSchema>;
 export type Theme = z.infer<typeof themeSchema>;

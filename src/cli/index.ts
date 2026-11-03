@@ -3,12 +3,13 @@ import path from 'node:path';
 import { Command } from 'commander';
 import { input, select } from '@inquirer/prompts';
 import { buildProject } from '../core/build.js';
+import { artifactIssues, inspectArtifacts } from '../core/artifacts.js';
 import { doctor } from '../core/doctor.js';
 import { createProject, availableName } from '../core/projects.js';
-import { exists, loadProject, projectDir, readYaml, safePath, stamp, writeYaml, atomicWrite, root } from '../core/io.js';
+import { exists, hash, loadProject, projectDir, readYaml, safePath, stamp, writeYaml, atomicWrite, root } from '../core/io.js';
 import { localeSchema, localizedSchema, deckSchema, projectSchema } from '../core/model.js';
 import { ingest } from '../content/ingest.js';
-import { translationRequest, consistency } from '../localization/index.js';
+import { translationRequest, consistency, fictionalDataDisclosure } from '../localization/index.js';
 import { validateContent, validatePptx } from '../validation/index.js';
 import { renderProject } from '../rendering/index.js';
 import { applyRevision } from '../feedback/index.js';
@@ -75,7 +76,9 @@ cli.command('doctor').description('Check Node, dependencies, fonts, writable sto
 projectOption(cli.command('build').description('Validate and build independent PPTX files; preserve earlier outputs'))
   .option('--locale <locale>','Build one language').option('--authorize <ids>','Explicitly allow changes to these approved/locked slide IDs (comma-separated)')
   .action(async o=>{const r=await buildProject(o.project,{locale:o.locale,authorize:split(o.authorize??'')});print({files:r.files,changedSlides:r.report.changedSlides,warnings:r.report.issues});});
-projectOption(cli.command('validate').description('Validate source, translations, assets, layout geometry and existing PPTX files')).action(async o=>{
+projectOption(cli.command('validate').description('Validate source, translations, layout and current PPTX outputs'))
+  .option('--source-only','Validate authored source without requiring current PPTX outputs')
+  .action(async o=>{
   const {dir,config,deck,theme}=await loadProject(o.project);
   const issues=await validateContent(dir,config,deck,theme);
   const {drawSlide,validateGeometry}=await import('../layouts/index.js');
@@ -86,11 +89,28 @@ projectOption(cli.command('validate').description('Validate source, translations
       try {issues.push(...validateGeometry(await drawSlide(p,s,s.content[locale],theme,locale,dir,i)));}
       catch(e) {issues.push({severity:'error',code:'render-object',slide:s.id,locale,message:(e as Error).message});}
     }
-    const file=await safePath(dir,`output/presentation.${locale}.pptx`);
-    if(await exists(file)) {try {await validatePptx(file,deck.slides.length);} catch(e) {issues.push({severity:'error',code:'pptx',locale,message:(e as Error).message});}}
+    if (!o.sourceOnly) {
+      const file=await safePath(dir,`output/presentation.${locale}.pptx`);
+      if(await exists(file)) {try {await validatePptx(file,deck.slides.length);} catch(e) {issues.push({severity:'error',code:'pptx',locale,message:(e as Error).message});}}
+    }
   }
+  if (!o.sourceOnly) issues.push(...artifactIssues(await inspectArtifacts(o.project)));
   print({issues,errors:issues.filter(i=>i.severity==='error').length});
   if(issues.some(i=>i.severity==='error')) process.exitCode=1;
+});
+projectOption(cli.command('claims').description('Print a local read-only claim provenance report (excerpt text is withheld)')).action(async o=>{
+  const {dir,config,deck,theme}=await loadProject(o.project);
+  const sourceIndex=await safePath(dir,'content/sources.yaml');
+  const sourceRecords=await exists(sourceIndex)?((await readYaml(sourceIndex)).sources as {id:string;path:string;sha256:string;extracted?:string;extracted_sha256?:string}[]):[];
+  const issues=await validateContent(dir,config,deck,theme);
+  const report={project:o.project,source_locale:config.source_locale,claims:deck.slides.flatMap(slide=>(slide.claims??[]).map(claim=>{
+    const source=sourceRecords.find(record=>record.id===claim.source_ref);
+    const localizedText=Object.fromEntries(Object.entries(slide.content).map(([locale,content])=>[locale,content[claim.field]]));
+    const validationIssues=issues.filter(issue=>issue.claim===claim.id||(issue.code==='source-integrity'&&issue.slide===slide.id));
+    return {slide_id:slide.id,claim_id:claim.id,field:claim.field,localized_text:localizedText,source_ref:claim.source_ref,source_path:source?.path,source_sha256:source?.sha256,extracted_path:source?.extracted,extracted_sha256:source?.extracted_sha256,locator:claim.locator,excerpt_sha256:hash(claim.excerpt),excerpt_length:[...claim.excerpt].length,validation_issues:validationIssues.map(({severity,code,message})=>({severity,code,message}))};
+  }))};
+  print(report);
+  if(report.claims.some(claim=>claim.validation_issues.some(issue=>issue.severity==='error'))) process.exitCode=1;
 });
 projectOption(cli.command('render').description('Create real slide PNG previews, PDF and a contact sheet with a local renderer'))
   .option('--locale <locale>','Render one language').option('--renderer <name>','auto, libreoffice or powerpoint','auto')
@@ -113,6 +133,7 @@ projectOption(cli.command('translate').description('Export a manual translation 
       const c=localizedSchema.parse(entry.translation);
       if((s.locked||['approved','locked'].includes(s.status)||['approved','locked'].includes(s.content[to]?.review))&&!authorized.includes(s.id))throw new Error(`${s.id}: protected translation requires --authorize ${s.id}`);
       const problems=consistency(s.content[config.source_locale],c,config.glossary);if(problems.length)throw new Error(`${s.id}: ${problems.join('; ')}`);
+      if(s.chart?.fictional&&!fictionalDataDisclosure(to,c.fictionalNotice))throw new Error(`${s.id}: fictional chart requires a reviewed localized fictionalNotice for ${to}; translation import was not saved.`);
       s.content[to]=c;
     }
     if(deck.slides.some(s=>!s.content[to]))throw new Error('Translation import is incomplete; no changes saved.');

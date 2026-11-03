@@ -16,6 +16,7 @@
     "build": "tsx src/cli/index.ts build",
     "translate": "tsx src/cli/index.ts translate",
     "validate": "tsx src/cli/index.ts validate",
+    "claims": "tsx src/cli/index.ts claims",
     "render": "tsx src/cli/index.ts render",
     "revise": "tsx src/cli/index.ts revise",
     "ingest": "tsx src/cli/index.ts ingest",

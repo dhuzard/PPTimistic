@@ -5,7 +5,7 @@ import { parse } from 'csv-parse/sync';
 import { atomicWrite, exists, hash, readYaml, safePath, stamp, writeYaml } from '../core/io.js';
 import { deckSchema, type Deck } from '../core/model.js';
 
-export type SourceRecord = { id: string; path: string; sha256: string; kind: string; extracted?: string; error?: string };
+export type SourceRecord = { id: string; path: string; sha256: string; kind: string; extracted?: string; extracted_sha256?: string; error?: string };
 const images = ['.png', '.jpg', '.jpeg', '.svg', '.webp'];
 async function files(dir: string): Promise<string[]> {
   const entries = await fs.readdir(dir, { withFileTypes: true });
@@ -61,6 +61,7 @@ export async function ingest(dir: string, input?: string) {
       else throw new Error('Unsupported extraction format. File retained; convert locally or ask an agent to extract it.');
       if (text !== undefined) {
         record.extracted = `content/extracted/${record.id}.txt`;
+        record.extracted_sha256 = hash(text);
         await atomicWrite(await safePath(dir, record.extracted), text);
       }
     } catch (e) { record.error = (e as Error).message; }

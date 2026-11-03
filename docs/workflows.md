@@ -4,6 +4,8 @@
 
 `npm run setup` checks the environment, offers five essential settings, writes a new project and builds its demonstration deck. On a noninteractive terminal the same command uses defaults. `--yes` makes that behavior explicit. Use `--project NAME` to choose an independent folder. Existing names are refused, including on setup reruns. With no explicit name, setup/new chooses a fresh numbered folder. `npm run demo` alone rebuilds an existing demo without replacing its source.
 
+`npm run validate -- --project NAME` checks both authored source and whether each configured PPTX is present, unchanged since its build, and current with the source. Use `npm run validate -- --project NAME --source-only` while authoring content before the first build. Rendering also requires a current PPTX and records its hash and source fingerprint in `render.json`.
+
 The CLI initializes a coherent project directly; `templates/project/` is a minimal manual reference. Node and dependency failures block setup. Optional rendering, fonts and external providers are diagnosed without requiring API keys. Setup UI supports English and French; advanced commands, help, diagnostics and validation messages are primarily English in v0.1.
 
 ## Import local source documents

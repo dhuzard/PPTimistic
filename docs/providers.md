@@ -1,6 +1,8 @@
 # Illustrations, translation and privacy
 
-The shipped application performs extraction, generation, validation and rendering locally. It makes no AI network calls and has no enabled paid provider. `npm install` downloads dependencies; that does not upload presentation documents. No credentials are needed for the demo.
+The PPTimistic CLI performs document extraction, slide generation, validation and rendering locally. It makes no AI network calls and ships with no enabled paid provider. `npm install` downloads software dependencies; it does not upload presentation documents. No credentials are needed for the demo.
+
+This local-only boundary applies to the CLI, not to an external coding agent used to edit the project. Codex, Claude Code or another agent may send source documents, extracted text, prompts, code or tool results to its service or connected services, according to its own configuration and policies. Before using an agent with confidential material, review those settings and explicitly approve the destination and scope. A local CLI command does not make the agent's surrounding workflow local.
 
 Private project folders, inputs, feedback, assets and outputs are ignored by Git by default. Only the fictional demo's source YAML, style document and source SVG are allowlisted, alongside the deliberately public screenshot under docs/. Review changes before committing; an ignore file is not access control. Keep sensitive data out of the demo folder. Environment secrets belong in `.env` or the process environment; `.env` is ignored. The CLI does not automatically load `.env` in v0.1, so export variables or launch Node with an environment loader when adding an adapter.
 

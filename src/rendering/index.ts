@@ -5,6 +5,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import sharp from 'sharp';
 import { atomicWrite, exists, loadProject, root, safePath, stamp } from '../core/io.js';
+import { artifactIssues, inspectArtifacts } from '../core/artifacts.js';
 
 const exec=promisify(execFile);
 export async function run(command:string,args:string[],timeout=120000) {
@@ -42,8 +43,12 @@ export async function renderProject(name:string,locale?:string,renderer='auto') 
   if (selected==='none' || (selected==='libreoffice' && (!tools.soffice||!tools.pdftoppm)) || (selected==='powerpoint' && !tools.powerpoint)) {
     return {available:false,message:'No complete local renderer. Install LibreOffice and pdftoppm, or use PowerPoint on Windows. PPTX creation remains available.',folders:[] as string[]};
   }
+  const artifacts = await inspectArtifacts(name, locale);
+  const freshnessIssues = artifactIssues(artifacts);
+  if (freshnessIssues.length) throw new Error(freshnessIssues.map(i => `${i.locale}: ${i.message}`).join('\n'));
   const folders:string[]=[];
   for (const lang of locale?[locale]:config.output_locales) {
+    const artifact = artifacts.find(a => a.locale === lang)!;
     const deck=await safePath(dir,`output/presentation.${lang}.pptx`);
     if (!(await exists(deck))) throw new Error(`Build ${lang} before rendering.`);
     const output=await safePath(dir,`output/previews/${lang}/${stamp()}-${crypto.randomUUID().slice(0,8)}`);
@@ -64,7 +69,7 @@ export async function renderProject(name:string,locale?:string,renderer='auto') 
     const files=(await fs.readdir(output)).filter(f=>/\.png$/i.test(f)).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
     if (!files.length) throw new Error('Renderer produced no slide images.');
     await contactSheet(output,files);
-    await atomicWrite(path.join(output,'render.json'),JSON.stringify({renderer:selected,pptx:deck,slides:files,visualInspection:'Not performed automatically. Open contact-sheet.png and individual previews.'},null,2));
+    await atomicWrite(path.join(output,'render.json'),JSON.stringify({renderer:selected,pptx:deck,pptxSha256:artifact.sha256,sourceFingerprint:artifact.sourceFingerprint,artifactStatus:artifact.status,slides:files,visualInspection:'Not performed automatically. Open contact-sheet.png and individual previews.'},null,2));
     await atomicWrite(await safePath(dir,`output/previews/${lang}/latest.json`),JSON.stringify({folder:output},null,2));
     folders.push(output);
   }

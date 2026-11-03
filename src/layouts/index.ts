@@ -4,6 +4,7 @@ import path from 'node:path';
 import { safePath } from '../core/io.js';
 import { type Slide, type Theme, type Localized } from '../core/model.js';
 import { type Issue } from '../validation/index.js';
+import { fictionalDataDisclosure } from '../localization/index.js';
 
 export const WIDTH = 13.333333, HEIGHT = 7.5;
 export type Box = { x: number; y: number; w: number; h: number; role: string; font?: number; text?: string };
@@ -52,7 +53,8 @@ export async function drawSlide(pptx: PptxGenJS, model: Slide, c: Localized, the
   const footerY=7.13;
   text(`${String(index+1).padStart(2,'0')}   /   ${model.id}`,m,footerY,1.5,.2,10,'footer',theme.secondary);
   text(model.citations.join(' · '),2.4,footerY,WIDTH-m-2.4,.22,10,'citation',theme.secondary);
-  slide.addNotes(`[${model.id}] ${c.notes}\nEvidence: ${model.evidence}\nSources: ${model.source_refs.join(', ')}\nCitations: ${model.citations.join('; ')}`);
+  const claimLinks=(model.claims??[]).map(claim=>`${claim.id}: field=${claim.field}; source=${claim.source_ref}${claim.locator?`; locator=${claim.locator}`:''}`).join('\n');
+  slide.addNotes(`[${model.id}] ${c.notes}\nEvidence: ${model.evidence}\nSources: ${model.source_refs.join(', ')}\nCitations: ${model.citations.join('; ')}${claimLinks?`\nClaims:\n${claimLinks}`:''}`);
   if (['title','conclusion'].includes(model.layout)) {
     rect(m,1.04,.6,.06,theme.accent);
     text(c.title,m,1.45,inner,1.25,theme.heading+4,'title',theme.foreground,true);
@@ -95,17 +97,22 @@ export async function drawSlide(pptx: PptxGenJS, model: Slide, c: Localized, the
     text(c.body,m,5.32,inner,1.05,20,'body',theme.secondary);
   } else if (model.layout==='chart' && model.chart) {
     text(c.message,m,1.95,inner,.75,20,'message',theme.secondary);
-    const box={x:m,y:2.95,w:inner,h:3.24,role:'chart'};
+    const box={x:m,y:2.9,w:inner,h:3.05,role:'chart'};
     g.boxes.push(box);
     slide.addChart(pptx.ChartType.bar,model.chart.series.map((s,i)=>({name:c.seriesNames[i],labels:c.labels,values:s.values})),{
       ...box,barDir:'col',catAxisLabelFontFace:theme.font,catAxisLabelFontSize:18,valAxisLabelFontFace:theme.font,valAxisLabelFontSize:16,
       chartColors:model.chart.series.length>1?[theme.accent,'849DA0','BBCACC']:[theme.accent],showLegend:model.chart.series.length>1,showTitle:false,showValue:true,dataLabelFormatCode:'General',
-      dataLabelPosition:'outEnd',dataLabelColor:theme.foreground,
+      dataLabelPosition:'outEnd',dataLabelColor:theme.foreground,dataLabelFontFace:theme.font,dataLabelFontSize:16,
       valGridLine:{color:'E4E4E7'},
       catAxisLineColor:theme.secondary,valAxisLineColor:theme.background,
       altText:c.alt||c.caption,legendFontFace:theme.font,legendFontSize:16
     });
-    text(c.caption,m,6.42,inner,.48,16,'caption',theme.secondary);
+    if (model.chart.fictional) {
+      const disclosure=fictionalDataDisclosure(locale,c.fictionalNotice);
+      if (!disclosure) throw new Error(`No fictional-data disclosure is available for locale ${locale}.`);
+      text(disclosure,m,6.03,inner,.3,16,'fictional-disclosure',theme.secondary,true);
+      text(c.caption,m,6.4,inner,.48,16,'caption',theme.secondary);
+    } else text(c.caption,m,6.4,inner,.48,16,'caption',theme.secondary);
   } else if (model.layout==='comparison') {
     const gap=.7, w=(inner-gap)/2;
     [c.message,c.body].forEach((value,i)=>{

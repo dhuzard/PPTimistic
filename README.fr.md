@@ -10,7 +10,24 @@ Créez des présentations PowerPoint sobres et modifiables avec un agent de prog
 
 ## Première présentation
 
-Sur GitHub, choisissez **[Use this template → Create a new repository](https://github.com/new?template_name=PPTimistic&template_owner=dhuzard)** pour créer votre propre copie. Vous pouvez aussi cloner ou télécharger le dépôt. Installez Node.js **22.13 ou ultérieur**, puis ouvrez le dossier dans VS Code.
+Installez Node.js **22.13 ou ultérieur** avant d'exécuter les commandes ci-dessous.
+
+### Créer votre dépôt à partir du modèle
+
+Sur GitHub, choisissez **[Use this template → Create a new repository](https://github.com/new?template_name=PPTimistic&template_owner=dhuzard)**. GitHub crée un nouveau dépôt indépendant du dépôt amont PPTimistic, dans votre compte.
+
+Clonez le dépôt que vous venez de créer, puis lancez l'assistant dans ce dossier :
+
+```sh
+git clone https://github.com/VOTRE-COMPTE/VOTRE-DEPOT.git
+cd VOTRE-DEPOT
+npm install
+npm run setup -- --ui fr
+```
+
+### Cloner le dépôt amont
+
+Pour travailler à partir d'une copie locale du projet amont, exécutez :
 
 ```sh
 git clone https://github.com/dhuzard/PPTimistic.git pptimistic
@@ -18,6 +35,8 @@ cd pptimistic
 npm install
 npm run setup -- --ui fr
 ```
+
+Ouvrez le dossier dans VS Code si vous souhaitez utiliser Codex ou Claude Code.
 
 L'assistant demande le titre, la langue source, les langues de sortie, le style visuel et un dossier de documents facultatif. Validez les valeurs par défaut avec Entrée. Il crée une démonstration de cinq diapositives. Les graphiques utilisent des **données fictives**, sans interprétation scientifique.
 
@@ -38,11 +57,15 @@ npm run validate -- --project recherche
 npm run render -- --project recherche
 ```
 
+`npm run validate -- --project recherche --source-only` vérifie le contenu source et la mise en page sans vérifier les fichiers PowerPoint générés.
+
 Les documents sont copiés et extraits localement avec leur provenance. **L'import ne crée pas automatiquement un résumé scientifique.** Le contenu reste une démonstration fictive tant que vous ou votre agent n'avez pas rédigé les diapositives. Demandez par exemple :
 
 > Crée cette présentation à partir de projects/recherche/inputs. Respecte l'ordre du plan, cite les sources, signale les informations manquantes et conserve les nuances scientifiques. Génère les versions française et anglaise, valide-les et montre les aperçus.
 
 Markdown, TXT, DOCX, PDF textuels, CSV et images usuelles sont pris en charge. Les formats non reconnus sont conservés et signalés. Un plan Markdown unique peut être importé avec `--from-plan --locales fr-FR --source fr-FR` : chaque titre `##` devient une diapositive, sans réécriture du texte. Voir [l'exemple](examples/slide-plan.md).
+
+Pour relier une affirmation à un passage précis, ajoutez une entrée `claims` facultative vers un extrait de document importé, puis lancez `npm run claims -- --project recherche`. Le rapport local indique l'ID de la source, son chemin, son empreinte, le repère et les éventuelles erreurs, sans afficher l'extrait. Voir le [schéma des affirmations](docs/architecture.md). La pertinence scientifique du passage doit être relue par une personne compétente.
 
 ## Illustrations et traductions
 
@@ -56,6 +79,7 @@ npm run build -- --project recherche
 ```
 
 Une traduction manquante bloque l'export de cette langue. Les nombres, unités, DOI et termes protégés du glossaire sont contrôlés. La fidélité scientifique doit être relue par une personne compétente.
+Pour un graphique fictif dans une autre langue que le français ou l'anglais, renseignez `fictionalNotice` avec une mention explicite et relue dans cette langue ; sinon, la compilation s'arrête.
 
 ## Donner un retour
 
@@ -73,4 +97,6 @@ Les modifications effectuées directement dans PowerPoint **ne mettent pas à jo
 
 Les aperçus nécessitent LibreOffice avec `pdftoppm`, ou PowerPoint installé sous Windows. Configurez `SOFFICE_PATH` et `PDFTOPPM_PATH` si nécessaire. Leur absence ne bloque pas la création du PPTX. Arial est la police par défaut ; configurez Inter si elle est installée. Ne redistribuez pas de polices propriétaires. Les diagnostics et les commandes avancées restent principalement en anglais dans cette version.
 
-Les projets privés sont exclus de Git par défaut, sauf les sources fictives de la démonstration. Aucun fournisseur d'IA externe n'est activé. Voir [les parcours détaillés](docs/workflows.md), [le modèle de contenu](docs/architecture.md), [la confidentialité](docs/providers.md) et [les limites](docs/limitations.md). PPTimistic est un dépôt modèle indépendant. Vos projets de présentation restent locaux, sauf si vous choisissez de les publier.
+La CLI traite les fichiers localement et n'effectue aucun appel réseau vers une IA. Un agent de programmation est un service distinct, soumis à ses propres règles de traitement des données : si vous en utilisez un, l'agent et ses outils connectés peuvent transmettre des documents sources, du texte extrait ou des prompts hors de votre ordinateur. Vérifiez sa configuration et ses règles, et ne lui confiez pas de données confidentielles sans avoir explicitement approuvé la destination et le périmètre. Les fournisseurs externes de ce projet sont uniquement des interfaces d'extension ; la CLI n'en active ni n'en appelle aucun.
+
+Les projets privés sont exclus de Git par défaut, sauf les sources fictives de la démonstration. N'ajoutez pas de documents confidentiels ni de fichiers générés à un dépôt public. Voir [les parcours détaillés](docs/workflows.md), [le modèle de contenu](docs/architecture.md), [la confidentialité](docs/providers.md) et [les limites](docs/limitations.md). PPTimistic est un dépôt modèle indépendant. La CLI conserve les fichiers du projet localement sauf publication volontaire ; vérifiez séparément le traitement des données de l'agent si vous en utilisez un.

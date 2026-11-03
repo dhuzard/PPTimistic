@@ -10,7 +10,24 @@ Create clean, editable PowerPoint presentations with a coding agent or a local t
 
 ## First presentation
 
-Use **[Use this template → Create a new repository](https://github.com/new?template_name=PPTimistic&template_owner=dhuzard)** on GitHub to create your own copy. Alternatively, clone or download this repository. Your copy can have any name.
+Install Node.js **22.13 or later** before running the commands below.
+
+### Create your own repository from the template
+
+On GitHub, choose **[Use this template → Create a new repository](https://github.com/new?template_name=PPTimistic&template_owner=dhuzard)**. GitHub creates a new repository under your account, independent of the PPTimistic upstream repository.
+
+Clone the repository you just created, then run setup inside it:
+
+```sh
+git clone https://github.com/YOUR-ACCOUNT/YOUR-REPOSITORY.git
+cd YOUR-REPOSITORY
+npm install
+npm run setup
+```
+
+### Clone the upstream repository
+
+To work from a local clone of the upstream project instead, run:
 
 ```sh
 git clone https://github.com/dhuzard/PPTimistic.git pptimistic
@@ -19,7 +36,7 @@ npm install
 npm run setup
 ```
 
-Install Node.js **22.13 or later** first. Open the folder in VS Code if you want to work with Codex or Claude Code. Setup asks five questions: title, source language, output languages, visual preset and an optional documents folder. Press Enter to accept defaults. The wizard offers English and French; force French with `npm run setup -- --ui fr`.
+Open the folder in VS Code if you want to work with Codex or Claude Code. Setup asks five questions: title, source language, output languages, visual preset and an optional documents folder. Press Enter to accept defaults. The wizard offers English and French; force French with `npm run setup -- --ui fr`.
 
 Setup creates a new project and exports a five-slide demonstration. Without a project name, rerunning setup creates another numbered folder. Explicit names are never overwritten. For an unattended first run:
 
@@ -38,6 +55,8 @@ npm run validate -- --project research-talk
 npm run render -- --project research-talk
 ```
 
+`npm run validate -- --project research-talk --source-only` checks source content and layout without checking generated PowerPoint files.
+
 Documents are copied locally and extracted with provenance. **Importing research documents does not automatically summarize them.** Until you or your agent authors the slide content, the deck remains an explicitly fictional demo. Tell your agent:
 
 > Create this presentation from projects/research-talk/inputs. Use the supplied sources, preserve the slide plan order, flag missing evidence, and write concise slide content and presenter notes. Generate French and English outputs, validate them, then render previews.
@@ -49,6 +68,8 @@ npm run new -- --project planned-talk --yes --inputs "path/to/plan-folder" --fro
 ```
 
 Large blocks of text fail layout validation instead of being silently shrunk. An agent can refine the source with your editorial approval.
+
+For claims that need a precise source trail, add an optional `claims` entry linking a visible slide field to an excerpt from an ingested document, then run `npm run claims -- --project research-talk`. The local report shows the source ID, path, hash, locator and review issues without printing the excerpt itself. See the [claim schema](docs/architecture.md). A matching excerpt still needs human scientific review.
 
 ## Illustrations, translations and revisions
 
@@ -64,6 +85,7 @@ npm run build -- --project research-talk
 ```
 
 Missing translations block that language's export. Numbers, units, DOIs and protected glossary terms are checked. Translation still needs scientific review.
+For a fictional chart in a language beyond English or French, fill its `fictionalNotice` field with a reviewed, visible disclosure in that language; the build will otherwise stop.
 
 ```sh
 npm run revise -- --project research-talk --slide S002 --message "Less text; preserve the scientific meaning."
@@ -84,6 +106,8 @@ If previews are unavailable, install LibreOffice plus `pdftoppm` (Poppler); Wind
 
 For “externally modified PPTX,” keep a separate copy and reconcile its changes into YAML before rebuilding. Direct PowerPoint edits do **not** update source files. Never delete the output or history until edits have been reconciled. For “missing translation” or “text overflow,” complete the translation or shorten the relevant slide; validation identifies its stable ID.
 
-Project folders are ignored by Git by default, except the public fictional demo source. Do not add confidential inputs or generated materials to a public repository. External providers are extension interfaces only; no network AI provider is enabled or called.
+The CLI processes presentation files locally and makes no AI network calls. A coding agent is a separate service with its own data handling: if you use one, the agent and its connected tools may transmit source documents, extracted text or prompts outside your computer. Review that agent's configuration and policies, and do not expose confidential material unless you have explicitly approved the destination and scope. External providers in this project are extension interfaces only; no network AI provider is enabled or called by the CLI.
 
-See [architecture and content schema](docs/architecture.md), [workflows and manual edit reconciliation](docs/workflows.md), [privacy and providers](docs/providers.md), and [release limitations](docs/limitations.md). PPTimistic is a standalone GitHub template. Your presentation projects remain local unless you deliberately publish them.
+Project folders are ignored by Git by default, except the public fictional demo source. Do not add confidential inputs or generated materials to a public repository.
+
+See [architecture and content schema](docs/architecture.md), [workflows and manual edit reconciliation](docs/workflows.md), [privacy and providers](docs/providers.md), and [release limitations](docs/limitations.md). PPTimistic is a standalone GitHub template. The CLI keeps project files local unless you deliberately publish them; review an agent's separate data handling before using one.
