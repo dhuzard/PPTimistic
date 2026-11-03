@@ -70,7 +70,13 @@ The v0.3 changes were integrated locally on Windows with Node 24.16.0 and PowerP
 
 Visual inspection in this integration: I opened the current English and French demo contact sheets and both full-size S004 chart PNGs. The visible text, values and fictional-data notices were legible with no obvious clipping or overlap in those images. I also opened the public fixture's full-size English diagram (normal and missing-font) and intentionally long chart; the normal diagrams were readable and the long chart labels visibly overlapped. The accessibility lane separately opened final English S003 and French S004 PNGs. Other fixture images were rendered but not visually inspected here. These are visual observations, separate from geometry, OOXML and COM checks.
 
-PowerPoint's Accessibility Checker and Reading Order Pane were not inspected through their UI, and no screen reader was tested. The manual review remains open before claiming assistive-technology success. The accepted `idea.svg` was unchanged. The public fictional S004 chart gained English/French alt descriptions and an updated French source fingerprint; no private source or generated output was committed.
+At release verification time, PowerPoint's Accessibility Checker and Reading Order Pane had not been inspected through their UI, and no screen reader had been tested. The manual review remained open before claiming assistive-technology success. The accepted `idea.svg` was unchanged. The public fictional S004 chart gained English/French alt descriptions and an updated French source fingerprint; no private source or generated output was committed.
+
+### Follow-up: PowerPoint accessibility panes
+
+Both generated demo decks were opened read-only in PowerPoint 16.0. Windows UI Automation read the actual Accessibility Checker and Reading Order Pane controls, separately from OOXML and COM shape inspection. For each language, all 12 displayed checker rule categories showed zero findings. The Reading Order Pane exposed all five slides: 36 rows per deck, with the title first and footer last on every slide. Each deck's six decorative shapes were excluded from reading order; every other listed object was included. The image, diagram connectors and chart had localized descriptions in the pane. On S004, the pane listed title, message, chart, fictional-data disclosure, caption and footer in that sequence.
+
+This was programmatic inspection of PowerPoint's UI accessibility tree. A direct screenshot of the pane could not be captured because PowerPoint did not become the foreground window. A person has not visually inspected the pane, and no screen reader was tested. [Issue #2](https://github.com/dhuzard/PPTimistic/issues/2) remains open for the human review.
 
 ### Hosted follow-up
 
