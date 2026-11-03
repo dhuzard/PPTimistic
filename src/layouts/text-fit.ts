@@ -39,3 +39,12 @@ export function measureText(text: string, width: number, font: number) {
   }
   return { lines, height: lines * font * 1.22 / 72, method: 'conservative-glyph-estimate' as const };
 }
+
+/** Chart engines reserve an undocumented fraction of their box for plot/axes.
+ * Flag labels that would need more than one line even in a generous share of
+ * the box. This is a review signal, not a prediction of any renderer's wrap. */
+export function chartLabelsNeedingReview(labels: readonly string[], chartWidth: number, font = 18): number[] {
+  if (!labels.length) return [];
+  const slot = chartWidth / labels.length;
+  return labels.flatMap((label, index) => measureText(label, slot, font).lines > 1 ? [index] : []);
+}
