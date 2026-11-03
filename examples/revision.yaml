@@ -1,0 +1,6 @@
+slide: S002
+locale: en-US
+category: content
+message: Shorten the explanation while keeping its meaning.
+patch:
+  body: Give the audience space to think.

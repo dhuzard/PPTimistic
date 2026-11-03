@@ -1,0 +1,10 @@
+name: Editorial minimal
+background: 'FFFFFF'
+foreground: '161616'
+secondary: '52525B'
+accent: '225E63'
+pale: 'EEF4F3'
+font: Arial
+heading: 36
+body: 24
+margin: 0.7

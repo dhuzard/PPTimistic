@@ -1,0 +1,61 @@
+{
+  "name": "pptimistic",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Because making slides should feel this hopeful. Local-first, editable scientific presentations.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "setup": "tsx src/cli/index.ts setup",
+    "new": "tsx src/cli/index.ts new",
+    "demo": "tsx src/cli/index.ts demo",
+    "doctor": "tsx src/cli/index.ts doctor",
+    "build": "tsx src/cli/index.ts build",
+    "translate": "tsx src/cli/index.ts translate",
+    "validate": "tsx src/cli/index.ts validate",
+    "render": "tsx src/cli/index.ts render",
+    "revise": "tsx src/cli/index.ts revise",
+    "ingest": "tsx src/cli/index.ts ingest",
+    "images": "tsx src/cli/index.ts images",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm test"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^8.7.5",
+    "commander": "^15.0.0",
+    "csv-parse": "^7.0.3",
+    "fast-xml-parser": "^5.11.2",
+    "jsqr": "^1.4.0",
+    "jszip": "^3.10.2",
+    "mammoth": "^1.13.0",
+    "pdf-parse": "^2.4.5",
+    "pptxgenjs": "4.0.1",
+    "qrcode": "^1.5.4",
+    "sharp": "^0.35.5",
+    "yaml": "^2.9.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/qrcode": "^1.5.6",
+    "playwright": "^1.64.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  },
+  "overrides": {
+    "image-size": "2.0.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dhuzard/PPTimistic.git"
+  },
+  "homepage": "https://github.com/dhuzard/PPTimistic#readme",
+  "bugs": {
+    "url": "https://github.com/dhuzard/PPTimistic/issues"
+  }
+}

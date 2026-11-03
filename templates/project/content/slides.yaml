@@ -1,0 +1,12 @@
+version: 1
+slides:
+  - id: S001
+    layout: statement
+    status: draft
+    evidence: missing
+    source_refs: []
+    content:
+      en-US:
+        title: State the central question
+        message: Supply your evidence before making a claim.
+        notes: This is a starter template, not a scientific result.

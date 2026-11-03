@@ -1,0 +1,10 @@
+name: Scientific technical
+background: 'FFFFFF'
+foreground: '142337'
+secondary: '46566A'
+accent: '1D5596'
+pale: 'EDF3FA'
+font: Arial
+heading: 34
+body: 22
+margin: 0.7

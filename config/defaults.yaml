@@ -1,0 +1,5 @@
+version: 1
+source_locale: en-US
+output_locales: [en-US, fr-FR]
+theme: editorial-minimal
+# Project overrides live in each project.yaml; rendering is always 16:9.

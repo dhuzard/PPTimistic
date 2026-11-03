@@ -1,0 +1,85 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import JSZip from 'jszip';
+import { XMLValidator } from 'fast-xml-parser';
+import { exists, hashFile, readYaml, safePath } from '../core/io.js';
+import { type Deck, type Theme, type Project } from '../core/model.js';
+import { consistency } from '../localization/index.js';
+
+export type Issue = { severity: 'error' | 'warning'; code: string; slide?: string; locale?: string; message: string };
+function luminance(hex: string) {
+  const v = hex.match(/../g)!.map(s => parseInt(s,16)/255).map(n => n <= .04045 ? n/12.92 : ((n+.055)/1.055)**2.4);
+  return .2126*v[0]+.7152*v[1]+.0722*v[2];
+}
+export function contrast(a: string, b: string) { const x=luminance(a), y=luminance(b); return (Math.max(x,y)+.05)/(Math.min(x,y)+.05); }
+export async function validateContent(dir: string, config: Project, deck: Deck, theme: Theme, locales = config.output_locales) {
+  const issues: Issue[] = [];
+  const add = (code: string, message: string, slide?: string, locale?: string, severity: 'error'|'warning' = 'error') => issues.push({ severity, code, message, slide, locale });
+  if (contrast(theme.foreground,theme.background)<4.5 || contrast(theme.secondary,theme.background)<4.5 || contrast(theme.accent, theme.background)<4.5) add('contrast','Theme text contrast is below 4.5:1.');
+  const seen = new Set<string>();
+  const sources = await exists(path.join(dir,'content/sources.yaml')) ? (await readYaml(path.join(dir,'content/sources.yaml'))).sources as { id: string; path: string; sha256: string }[] : [];
+  for (const slide of deck.slides) {
+    if (seen.has(slide.id)) add('duplicate-id','Slide IDs must be unique.',slide.id);
+    seen.add(slide.id);
+    if (!slide.content[config.source_locale]) add('source-locale','Missing original content.',slide.id,config.source_locale);
+    if (slide.evidence === 'missing') add('evidence','Scientific evidence has not been classified; review the source before approval.',slide.id,undefined,'warning');
+    if (['established','interpretation'].includes(slide.evidence) && !slide.source_refs.length && !slide.citations.length) add('unsupported-claim','Scientific claims require a source reference or citation.',slide.id);
+    for (const ref of slide.source_refs) {
+      const source = sources.find(s => s.id===ref);
+      if (!source) add('source-reference',`Unknown source reference: ${ref}`,slide.id);
+      else {
+        const p = await safePath(dir,source.path);
+        if (!(await exists(p)) || await hashFile(p)!==source.sha256) add('source-integrity',`Source missing or changed since ingestion: ${ref}`,slide.id);
+      }
+    }
+    if (slide.visual?.asset) {
+      const p = await safePath(dir,slide.visual.asset);
+      if (!(await exists(p))) add('missing-asset',`Missing asset: ${slide.visual.asset}`,slide.id);
+    } else if (['text-image','full-image'].includes(slide.layout)) add('placeholder','Illustration missing; an explicitly labeled placeholder will be used.',slide.id,undefined,'warning');
+    if (slide.layout === 'chart') {
+      if (!slide.chart) add('chart','Chart layout requires chart data.',slide.id);
+      else if (!slide.chart.fictional && (!slide.chart.data_ref || !slide.source_refs.includes(slide.chart.data_ref))) add('chart-source','Empirical charts require data_ref referencing an ingested source.',slide.id);
+    }
+    for (const locale of locales) {
+      const c = slide.content[locale];
+      if (!c) { add('missing-translation',`Translation is missing. Run translate --to ${locale} or supply content manually.`,slide.id,locale); continue; }
+      const source = slide.content[config.source_locale];
+      if (source && locale !== config.source_locale) for (const msg of consistency(source,c,config.glossary)) add('translation-consistency',msg,slide.id,locale);
+      if (['diagram','workflow'].includes(slide.layout) && (c.labels.length<2 || c.labels.length>5)) add('diagram-labels','Use 2–5 labels for this layout.',slide.id,locale);
+      if (slide.chart) {
+        if (!c.labels.length || slide.chart.series.some(s=>s.values.length!==c.labels.length)) add('chart-labels','Chart labels and values must have matching lengths.',slide.id,locale);
+        if (c.seriesNames.length!==slide.chart.series.length) add('chart-series','Provide a localized name for every chart series.',slide.id,locale);
+        if (slide.chart.fictional && !c.caption.trim()) add('fictional-caption','Fictional data require an explicit localized caption.',slide.id,locale);
+      }
+      if (slide.visual?.asset && !c.alt) add('alt-text','Add a localized accessible image description.',slide.id,locale,'warning');
+      if (c.title.length>100) add('title-density','Title exceeds 100 characters; split or shorten it.',slide.id,locale,'warning');
+    }
+  }
+  return issues;
+}
+
+export async function validatePptx(file: string, expected: number) {
+  const zip = await JSZip.loadAsync(await fs.readFile(file));
+  const slides = Object.keys(zip.files).filter(k=>/^ppt\/slides\/slide\d+\.xml$/.test(k));
+  if (slides.length!==expected) throw new Error(`PPTX has ${slides.length} slides, expected ${expected}`);
+  for (const required of ['[Content_Types].xml','_rels/.rels','ppt/presentation.xml']) if (!zip.file(required)) throw new Error(`PPTX missing ${required}`);
+  for (const [name, entry] of Object.entries(zip.files)) {
+    if (!name.endsWith('.xml') && !name.endsWith('.rels')) continue;
+    const xml=await entry.async('string');
+    if (XMLValidator.validate(xml)!==true) throw new Error(`Invalid XML: ${name}`);
+    if (/<a:ext\b[^>]*\b(?:cx|cy)="-\d+"/.test(xml)) throw new Error(`Invalid negative shape extent: ${name}`);
+    if (name.endsWith('.rels')) {
+      for (const m of xml.matchAll(/<Relationship\s+([^>]+)\/?\s*>/g)) {
+        const attrs=m[1];
+        if (/TargetMode="External"/.test(attrs)) continue;
+        const target=attrs.match(/Target="([^"]+)"/)?.[1];
+        if (!target) continue;
+        const base=path.posix.dirname(name).replace(/\/?_rels$/,'');
+        const resolved=target.startsWith('/') ? target.slice(1) : path.posix.normalize(path.posix.join(base,target));
+        if (!zip.file(resolved)) throw new Error(`Broken PPTX relationship: ${name} → ${target}`);
+      }
+    }
+  }
+  for (const name of slides) if (!(await zip.file(name)!.async('string')).includes('<a:t>')) throw new Error(`No editable native text: ${name}`);
+  return { slides: slides.length, valid: true };
+}

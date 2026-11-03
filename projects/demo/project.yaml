@@ -1,0 +1,9 @@
+version: 1
+title: PPTimistic
+source_locale: en-US
+output_locales:
+  - en-US
+  - fr-FR
+theme: editorial-minimal
+content: content/slides.yaml
+glossary: []

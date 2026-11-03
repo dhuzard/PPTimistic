@@ -1,0 +1,1 @@
+Use `npm run new -- --project NAME` for the guided, complete project scaffold. This folder is a minimal schema reference for advanced users, not a second scaffold implementation. The CLI creates inputs/, content/, assets/, feedback/ and output/ and writes a project-specific illustration-style.md.

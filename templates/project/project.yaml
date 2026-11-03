@@ -1,0 +1,7 @@
+version: 1
+title: My presentation
+source_locale: en-US
+output_locales: [en-US]
+theme: editorial-minimal
+content: content/slides.yaml
+glossary: []

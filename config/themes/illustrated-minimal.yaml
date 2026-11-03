@@ -1,0 +1,10 @@
+name: Illustrated minimal
+background: 'FFFCF7'
+foreground: '26211E'
+secondary: '63564D'
+accent: '95472D'
+pale: 'F5EBDF'
+font: Arial
+heading: 38
+body: 24
+margin: 0.7

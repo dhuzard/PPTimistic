@@ -1,0 +1,176 @@
+version: 1
+slides:
+  - id: S001
+    layout: title
+    status: draft
+    locked: false
+    evidence: conceptual
+    source_refs: []
+    citations: []
+    content:
+      en-US:
+        title: PPTimistic
+        message: Clear ideas. Editable slides.
+        body: A local-first studio for scientific communication.
+        notes: A local-first studio for scientific communication.
+        caption: ""
+        alt: ""
+        labels: []
+        seriesNames: []
+        review: draft
+      fr-FR:
+        title: PPTimistic
+        message: Des idées claires. Des diapositives modifiables.
+        body: Un studio local pour la communication scientifique.
+        notes: Un studio local pour la communication scientifique.
+        caption: ""
+        alt: ""
+        labels: []
+        seriesNames: []
+        review: draft
+  - id: S002
+    layout: text-image
+    status: draft
+    locked: false
+    evidence: conceptual
+    source_refs: []
+    citations: []
+    content:
+      en-US:
+        title: Give each slide one clear message
+        message: Make the idea easy to see.
+        body: Keep the explanation in your notes. Give the audience space to think.
+        notes: Keep the explanation in your notes. Give the audience space to think.
+        caption: ""
+        alt: "Conceptual illustration: one central idea connects three elements."
+        labels: []
+        seriesNames: []
+        review: draft
+      fr-FR:
+        title: Une idée claire par diapositive
+        message: Rendre le message visible.
+        body: Gardez les explications dans les notes. Laissez au public le temps de
+          réfléchir.
+        notes: Gardez les explications dans les notes. Laissez au public le temps de
+          réfléchir.
+        caption: ""
+        alt: "Illustration conceptuelle : une idée centrale relie trois éléments."
+        labels: []
+        seriesNames: []
+        review: draft
+    visual:
+      asset: assets/reference/idea.svg
+      brief: Conceptual network, one central idea, restrained teal, no text.
+      accepted: true
+  - id: S003
+    layout: workflow
+    status: draft
+    locked: false
+    evidence: conceptual
+    source_refs: []
+    citations: []
+    content:
+      en-US:
+        title: From sources to a shared understanding
+        message: A deliberate, reviewable process.
+        body: Every step is a native, editable PowerPoint shape.
+        notes: Every step is a native, editable PowerPoint shape.
+        caption: ""
+        alt: ""
+        labels:
+          - Sources
+          - Structure
+          - Review
+          - Share
+        seriesNames: []
+        review: draft
+      fr-FR:
+        title: Des sources à une compréhension partagée
+        message: Un processus réfléchi, ouvert à la relecture.
+        body: Chaque étape est une forme PowerPoint native et modifiable.
+        notes: Chaque étape est une forme PowerPoint native et modifiable.
+        caption: ""
+        alt: ""
+        labels:
+          - Sources
+          - Structure
+          - Relecture
+          - Partage
+        seriesNames: []
+        review: draft
+  - id: S004
+    layout: chart
+    status: draft
+    locked: false
+    evidence: conceptual
+    source_refs: []
+    citations: []
+    content:
+      en-US:
+        title: Show the data. State the limits.
+        message: Fictional example data — no scientific inference.
+        body: This editable chart demonstrates the format, not a research result.
+        notes: This editable chart demonstrates the format, not a research result.
+        caption: Fictional example data — no scientific inference.
+        alt: ""
+        labels:
+          - Example A
+          - Example B
+          - Example C
+        seriesNames:
+          - Fictional values
+        review: draft
+      fr-FR:
+        title: Montrer les données et leurs limites
+        message: Données fictives — aucune inférence scientifique.
+        body: Ce graphique modifiable illustre le format, pas un résultat de recherche.
+        notes: Ce graphique modifiable illustre le format, pas un résultat de recherche.
+        caption: Données fictives — aucune inférence scientifique.
+        alt: ""
+        labels:
+          - Exemple A
+          - Exemple B
+          - Exemple C
+        seriesNames:
+          - Valeurs fictives
+        review: draft
+    chart:
+      fictional: true
+      series:
+        - values:
+            - 12
+            - 19
+            - 15
+  - id: S005
+    layout: conclusion
+    status: draft
+    locked: false
+    evidence: conceptual
+    source_refs: []
+    citations: []
+    content:
+      en-US:
+        title: Start with the evidence
+        message: |-
+          Build a clear story.
+          Keep every claim traceable.
+        body: Add your documents, review the source, then build your next presentation.
+        notes: Add your documents, review the source, then build your next presentation.
+        caption: ""
+        alt: ""
+        labels: []
+        seriesNames: []
+        review: draft
+      fr-FR:
+        title: Partir des preuves
+        message: |-
+          Construire un récit clair.
+          Documenter chaque affirmation.
+        body: Ajoutez vos documents, relisez les sources, puis créez votre présentation.
+        notes: Ajoutez vos documents, relisez les sources, puis créez votre
+          présentation.
+        caption: ""
+        alt: ""
+        labels: []
+        seriesNames: []
+        review: draft
