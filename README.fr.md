@@ -67,6 +67,8 @@ Markdown, TXT, DOCX, PDF textuels, CSV et images usuelles sont pris en charge. L
 
 Pour relier une affirmation à un passage précis, ajoutez une entrée `claims` facultative vers un extrait de document importé, puis lancez `npm run claims -- --project recherche`. Le rapport local indique l'ID de la source, son chemin, son empreinte, le repère et les éventuelles erreurs, sans afficher l'extrait. Voir le [schéma des affirmations](docs/architecture.md). La pertinence scientifique du passage doit être relue par une personne compétente. `npm run claims -- --project recherche --write-markdown` crée aussi `output/claims-report.md` avec des liens vers les fichiers locaux et l'état de leurs empreintes. Ce rapport contient le texte des diapositives et des chemins privés.
 
+Pour créer un graphique modifiable à partir de données réelles, importez un CSV et indiquez explicitement son empreinte, ses colonnes et ses lignes dans le YAML. Le graphique et son classeur intégré reprennent les valeurs sélectionnées ; une modification du CSV bloque la reconstruction jusqu'à relecture. Voir le [schéma du graphique](docs/architecture.md).
+
 ## Illustrations et traductions
 
 Placez vos références visuelles dans `projects/<nom>/assets/reference/`. Demandez à l'agent de les examiner et d'adapter `illustration-style.md`. Aucune analyse automatique de style n'est annoncée. La commande `npm run images -- --project recherche` prépare les prompts et la provenance. Les schémas natifs fonctionnent sans service externe. Ajoutez une illustration locale avec `--slide S002 --asset "chemin/image.png"` ; remplacer une image acceptée demande également `--authorize S002`.

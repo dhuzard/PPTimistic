@@ -72,6 +72,8 @@ Large blocks of text fail layout validation instead of being silently shrunk. An
 For claims that need a precise source trail, add an optional `claims` entry linking a visible slide field to an excerpt from an ingested document, then run `npm run claims -- --project research-talk`. The local report shows the source ID, path, hash, locator and review issues without printing the excerpt itself. See the [claim schema](docs/architecture.md). A matching excerpt still needs human scientific review.
 Use `npm run claims -- --project research-talk --write-markdown` for a local `output/claims-report.md` with links to retained source files and explicit source/extraction hash states. The report includes slide text and paths, so treat it as private.
 
+For a nonfictional editable chart, ingest a CSV and explicitly bind its source hash, columns and rows in slide YAML. The chart and its embedded workbook receive the selected values directly; changed CSV bytes block a rebuild until reviewed. See the [chart binding schema](docs/architecture.md).
+
 ## Illustrations, translations and revisions
 
 Put visual references in `projects/<name>/assets/reference/`. Ask your agent to inspect them and update `illustration-style.md`; no automated style analysis is claimed. `npm run images -- --project research-talk` writes detailed prompts and asset metadata. Native diagrams work without an image service. Attach a local illustration with `--slide S002 --asset "path/to/figure.png"`; replacing accepted assets also needs `--authorize S002`.

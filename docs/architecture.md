@@ -101,17 +101,15 @@ A chart uses native editable PowerPoint charts with an embedded workbook:
 
 ```yaml
 chart:
-  fictional: false
-  data_ref: SRC-your-ingested-source-id
+  fictional: true
   series:
     - values: [8, 12, 10]
-source_refs: [SRC-your-ingested-source-id]
 # Under each content locale:
 # labels: [A, B, C]
-# seriesNames: [Supplied measurement]
+# seriesNames: [Fictional example]
 ```
 
-These numbers illustrate the schema; they are not a scientific dataset. Actual charts require supplied data and a source reference. Fictional charts require `fictional: true`. The layout always prints an editable fictional-data disclosure independently of the author caption. English and French disclosures are built in. For another output locale, supply `fictionalNotice` in that slide's localized content, for example `fictionalNotice: Dati fittizi — solo dimostrazione` for `it-IT`. The build rejects a missing notice. A scientific reviewer must confirm any manually supplied wording. For manually transcribed inline values, the validator checks dimensions, reference existence and provenance but cannot verify transcription accuracy.
+These numbers illustrate the fictional schema; they are not a scientific dataset. Nonfictional charts require the CSV binding below and a source reference. Fictional charts require `fictional: true`. The layout always prints an editable fictional-data disclosure independently of the author caption. English and French disclosures are built in. For another output locale, supply `fictionalNotice` in that slide's localized content, for example `fictionalNotice: Dati fittizi — solo dimostrazione` for `it-IT`. The build rejects a missing notice. A scientific reviewer must confirm any manually supplied wording.
 
 For a nonfictional chart backed by an ingested CSV, use an explicit binding instead of inline `series` values:
 
