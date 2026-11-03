@@ -49,7 +49,10 @@ for (const command of ['setup','new','demo']) {
       const fr=language(o.ui)==='fr';
       print(fr?'Bienvenue dans PPTimistic. Vos documents restent sur cet ordinateur.':'Welcome to PPTimistic. Your documents stay on this computer.');
       const diagnostics=await doctor();
-      if (!diagnostics.nodeOk||!diagnostics.writable||diagnostics.dependencies.some(d=>!d.available)) throw new Error('Environment check failed. Run npm run doctor.');
+      if (!diagnostics.nodeOk||!diagnostics.writable||diagnostics.dependencies.some(d=>!d.available)) {
+        const missing=diagnostics.dependencies.filter(d=>!d.available).map(d=>d.name);
+        throw new Error(`Setup stopped before creating a project. ${!diagnostics.nodeOk?'Install Node.js 22.13 or later. ':''}${!diagnostics.writable?'Make the repository folder writable. ':''}${missing.length?`Install project dependencies with npm install (missing: ${missing.join(', ')}).`:''} Run npm run doctor for details.`);
+      }
       print(fr?'Création de diapositives PowerPoint modifiables, sans service payant.':'Creating editable PowerPoint slides, without paid services.');
       print({rendering:diagnostics.rendering,fonts:diagnostics.fonts});
       let title=o.title,source=o.source,locales=o.locales,theme=o.theme,inputs=o.inputs;
@@ -65,7 +68,7 @@ for (const command of ['setup','new','demo']) {
       // Validate settings before creating any directory.
       if (!['en-US','fr-FR'].includes(source)) throw new Error('The starter supports en-US/fr-FR. Other languages can be authored manually after setup.');
       if (!['editorial-minimal','scientific-technical','illustrated-minimal'].includes(theme)) throw new Error(`Unknown theme: ${theme}`);
-      if (inputs && !(await exists(path.resolve(inputs)))) throw new Error(`Input folder not found: ${inputs}`);
+      if (inputs && !(await exists(path.resolve(inputs)))) throw new Error(`Input folder not found: ${path.resolve(inputs)}. Check the path and try again; for a plan, pass its containing folder with --from-plan.`);
       const name=o.project??(command==='demo'?'demo':await availableName('my-presentation'));
       if (command==='demo'&&await exists(projectDir(name))) print(`Rebuilding existing ${name}; its source content is preserved.`);
       else await createProject({name,title,source,locales:outputs,theme,inputs:inputs||undefined,fromPlan:o.fromPlan});
@@ -149,7 +152,11 @@ projectOption(cli.command('claims').description('Print local claim provenance, s
 });
 projectOption(cli.command('render').description('Create real slide PNG previews, PDF and a contact sheet with a local renderer'))
   .option('--locale <locale>','Render one language').option('--renderer <name>','auto, libreoffice or powerpoint','auto')
-  .action(async (_name,o)=>{if(!['auto','libreoffice','powerpoint'].includes(o.renderer))throw new Error('Unknown renderer');print(await renderProject(o.project,o.locale,o.renderer));});
+  .action(async (_name,o)=>{
+    if(!['auto','libreoffice','powerpoint'].includes(o.renderer))throw new Error('Unknown renderer. Choose auto, libreoffice or powerpoint.');
+    const result=await renderProject(o.project,o.locale,o.renderer);print(result);
+    if(!result.available) print('Install LibreOffice and Poppler (pdftoppm), or use PowerPoint on Windows. Set SOFFICE_PATH and PDFTOPPM_PATH if detection fails. PPTX files are already built and remain usable.');
+  });
 projectOption(cli.command('bundle').description('Package current PPTX files, validation and provenance for local delivery'))
   .option('--previews <choice>','none or latest; latest requires current rendered previews','none')
   .option('--input <path>','Explicitly include one project-relative original input under inputs/; repeat for more', (value:string, previous:string[])=>[...previous,value], [] as string[])

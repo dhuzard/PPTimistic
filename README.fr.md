@@ -48,6 +48,19 @@ Pour une initialisation sans interaction :
 npm run setup -- --yes --project ma-presentation --ui fr --no-render
 ```
 
+Pour partir de vos documents, créez un projet séparé. Les fichiers sont importés et conservés localement, sans résumé automatique :
+
+```sh
+npm run new -- --project recherche --inputs "chemin/vers/dossier-du-plan" --from-plan --locales en-US --yes --ui fr
+npm run translate -- --project recherche --to fr-FR
+# Complétez chaque traduction dans le fichier YAML indiqué, puis :
+npm run translate -- --project recherche --to fr-FR --file "chemin/traductions.yaml"
+npm run build -- --project recherche
+npm run validate -- --project recherche
+npm run render -- --project recherche # facultatif ; la création du PPTX ne dépend pas d'un moteur
+npm run bundle -- --project recherche
+```
+
 ## Utiliser vos documents
 
 ```sh
@@ -95,11 +108,15 @@ Les modifications effectuées directement dans PowerPoint **ne mettent pas à jo
 
 Pour préparer une livraison locale, lancez `npm run bundle -- --project recherche`. La commande vérifie les PPTX et crée `output/deliveries/<id>/` avec les présentations, les résultats de validation et un manifeste d'empreintes. `--previews latest` ajoute les aperçus récents et vérifiés. Les documents originaux sont exclus, sauf si vous nommez chaque fichier avec `--input inputs/nom-du-fichier`. Vérifiez le dossier avant de le partager.
 
+## Aperçus de l'intégration continue
+
+GitHub Actions vérifie Node 22.13 et 24 sous Linux, macOS et Windows. Le job Linux avec Node 22.13 rend le jeu de diapositives typographiques public et conserve sept jours ses seules images d'aperçu et son `qa-manifest.json`. Le manifeste indique le moteur, la langue, le thème, les IDs et les images à examiner par une personne. CI ne prétend pas effectuer une inspection visuelle ni un test de lecteur d'écran.
+
 ## Aide
 
 `npm run doctor` vérifie l'environnement. `npm run build -- --help` décrit les options. `npm run demo` reconstruit la démonstration existante sans remplacer son contenu. `npm run check` lance le contrôle TypeScript et les tests.
 
-Les aperçus nécessitent LibreOffice avec `pdftoppm`, ou PowerPoint installé sous Windows. Configurez `SOFFICE_PATH` et `PDFTOPPM_PATH` si nécessaire. Leur absence ne bloque pas la création du PPTX. Arial est la police par défaut ; configurez Inter si elle est installée. Ne redistribuez pas de polices propriétaires. Les diagnostics et les commandes avancées restent principalement en anglais dans cette version.
+Les aperçus nécessitent LibreOffice avec `pdftoppm`, ou PowerPoint installé sous Windows. Configurez `SOFFICE_PATH` et `PDFTOPPM_PATH` si nécessaire. La commande render indique les outils locaux manquants ; le PPTX reste disponible. Si le dossier d'import est introuvable, vérifiez son chemin complet et indiquez le dossier contenant les fichiers. `--from-plan` demande un seul fichier Markdown avec des titres de diapositives `##`. L'assistant vérifie Node, les dépendances et les droits d'écriture avant de créer un projet ; `npm run doctor` détaille les prérequis à corriger. Arial est la police par défaut ; configurez Inter si elle est installée. Ne redistribuez pas de polices propriétaires. Les diagnostics et les commandes avancées restent principalement en anglais dans cette version.
 
 La CLI traite les fichiers localement et n'effectue aucun appel réseau vers une IA. Un agent de programmation est un service distinct, soumis à ses propres règles de traitement des données : si vous en utilisez un, l'agent et ses outils connectés peuvent transmettre des documents sources, du texte extrait ou des prompts hors de votre ordinateur. Vérifiez sa configuration et ses règles, et ne lui confiez pas de données confidentielles sans avoir explicitement approuvé la destination et le périmètre. Les fournisseurs externes de ce projet sont uniquement des interfaces d'extension ; la CLI n'en active ni n'en appelle aucun.
 

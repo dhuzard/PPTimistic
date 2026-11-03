@@ -46,6 +46,19 @@ npm run setup -- --yes --project my-talk --no-render
 
 Open `projects/my-talk/output/presentation.en-US.pptx` or `presentation.fr-FR.pptx`. Titles, paragraphs, diagram shapes, arrows and the example chart are editable. The chart contains **fictional demonstration data**. Preview generation is optional and uses installed local tools.
 
+To start from your documents instead, create a separate project. This imports and retains files locally; it does not summarize them:
+
+```sh
+npm run new -- --project research-talk --inputs "path/to/plan-folder" --from-plan --locales en-US --yes
+npm run translate -- --project research-talk --to fr-FR
+# Complete every translation in the YAML request named in the command output, then:
+npm run translate -- --project research-talk --to fr-FR --file "path/to/completed-request.yaml"
+npm run build -- --project research-talk
+npm run validate -- --project research-talk
+npm run render -- --project research-talk # optional; PPTX creation does not depend on a renderer
+npm run bundle -- --project research-talk
+```
+
 ## Your own presentation
 
 ```sh
@@ -98,6 +111,10 @@ Feedback is logged for your coding agent; the CLI does not pretend to interpret 
 
 For local delivery, run `npm run bundle -- --project research-talk`. It verifies current PPTX files and creates `output/deliveries/<id>/` with the decks, validation results and a hash manifest. Add `--previews latest` to include current rendered previews. Original inputs are excluded unless you name each file with `--input inputs/filename`; inspect the bundle before sharing it.
 
+## Continuous integration previews
+
+GitHub Actions checks Node 22.13 and 24 on Linux, macOS and Windows. The Linux Node 22.13 job renders the public typography fixture and uploads only its preview images and `qa-manifest.json` for seven days. The manifest records renderer, locale, theme, slide IDs and images still needing human inspection; CI does not claim visual or screen-reader inspection.
+
 ## Help and troubleshooting
 
 ```sh
@@ -107,7 +124,7 @@ npm run demo
 npm run check
 ```
 
-If previews are unavailable, install LibreOffice plus `pdftoppm` (Poppler); Windows can also use installed PowerPoint. Set `SOFFICE_PATH` or `PDFTOPPM_PATH` if detection fails. Missing renderers do not stop PPTX export. Set `font` in project YAML to an installed font; Arial is the portable default, and Inter is preferred when available. Do not redistribute proprietary fonts.
+If previews are unavailable, install LibreOffice plus `pdftoppm` (Poppler); Windows can also use installed PowerPoint. Set `SOFFICE_PATH` or `PDFTOPPM_PATH` if detection fails. The render command reports the missing local tools and the PPTX remains available. For “Input folder not found,” check the full path and pass the directory containing the files; use `--from-plan` only with exactly one Markdown file containing `##` slide headings. Setup checks Node, dependencies and writable storage before creating a project; `npm run doctor` reports which prerequisite needs repair. Set `font` in project YAML to an installed font; Arial is the portable default, and Inter is preferred when available. Do not redistribute proprietary fonts.
 
 For “externally modified PPTX,” keep a separate copy and reconcile its changes into YAML before rebuilding. Direct PowerPoint edits do **not** update source files. Never delete the output or history until edits have been reconciled. For “missing translation” or “text overflow,” complete the translation or shorten the relevant slide; validation identifies its stable ID.
 

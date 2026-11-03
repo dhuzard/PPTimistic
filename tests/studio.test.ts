@@ -77,6 +77,25 @@ describe('complete local workflow',()=>{
     expect(await fs.readFile(path.join(sandbox,'projects/second/inputs/study.txt'),'utf8')).toContain('8 mg');
     expect(await fs.readFile(file('inputs/precious.txt'),'utf8')).toContain('Keep this research');
   });
+  test('clean first-run path imports local sources, completes a manual translation, validates, renders optionally and bundles',async()=>{
+    const input=path.join(sandbox,'first-run-documents');await fs.mkdir(input);await fs.writeFile(path.join(input,'plan.md'),'# Plan\n\n## First observation\nThe supplied plan reports no measured result.');
+    const created=await cli('new','--yes','--project','first-run','--inputs',input,'--from-plan','--locales','en-US','--no-render');
+    expect(created.code,created.output).toBe(0);
+    expect(await fs.readFile(path.join(sandbox,'projects/first-run/inputs/plan.md'),'utf8')).toContain('no measured result');
+    const requestRun=await cli('translate','--project','first-run','--to','fr-FR');expect(requestRun.code,requestRun.output).toBe(0);
+    const requestFile=(await fs.readdir(path.join(sandbox,'projects/first-run/content'))).find(name=>name.startsWith('translation-request.fr-FR.'))!;
+    const requestPath=path.join(sandbox,'projects/first-run/content',requestFile),request=YAML.parse(await fs.readFile(requestPath,'utf8'));
+    const translated={...request,slides:request.slides.map((item:any)=>({id:item.id,source_fingerprint:item.source_fingerprint,translation:item.source}))};
+    const completed=path.join(sandbox,'translation-fr.yaml');await fs.writeFile(completed,YAML.stringify(translated));
+    expect((await cli('translate','--project','first-run','--to','fr-FR','--file',completed)).code).toBe(0);
+    expect((await cli('build','--project','first-run')).code).toBe(0);
+    expect((await cli('validate','--project','first-run')).code).toBe(0);
+    const rendered=await cli('render','--project','first-run','--renderer','libreoffice');expect(rendered.code,rendered.output).toBe(0);
+    expect(rendered.output).toMatch(/Rendered with|No complete local renderer/);
+    const bundled=await cli('bundle','--project','first-run');expect(bundled.code,bundled.output).toBe(0);
+    const result=JSON.parse(bundled.output);expect(result.includedInputs).toEqual([]);
+    expect(await fs.readFile(result.manifest,'utf8')).toContain('originalInputsIncluded');
+  },120000);
   test('Markdown plan respects order and copies body without invention',async()=>{
     const input=path.join(sandbox,'plan');await fs.mkdir(input);
     await fs.writeFile(path.join(input,'plan.md'),'# Study\n\n## First observation\nSupplied sentence.\n\n## Second observation\nNo result is available.');
@@ -147,6 +166,13 @@ describe('complete local workflow',()=>{
     expect((await cli('build','--project','../escape')).output).toContain('Project name');
     const d=await deck();const invalid=structuredClone(d);invalid.slides[1].id='S001';await save(invalid);
     expect((await cli('build','--project','demo')).output).toContain('Slide IDs must be unique');await save(d);
+  });
+  test('setup reports a recoverable missing input path before making a project',async()=>{
+    const missing=path.join(sandbox,'does-not-exist');
+    const run=await cli('new','--yes','--project','bad-input','--inputs',missing,'--no-render');
+    expect(run.code).not.toBe(0);expect(run.output).toContain(`Input folder not found: ${missing}`);
+    expect(run.output).toContain('Check the path and try again');
+    await expect(fs.access(path.join(sandbox,'projects/bad-input'))).rejects.toThrow();
   });
   test('image prompts reuse accepted assets and require explicit replacement approval',async()=>{
     expect((await cli('images','--project','demo','--slide','S002')).code).toBe(0);
