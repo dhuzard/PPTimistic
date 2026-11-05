@@ -6,7 +6,19 @@ Create clean, editable PowerPoint presentations with a coding agent or a local t
 
 [Français → README.fr.md](README.fr.md)
 
-![Five-slide French demo, rendered in PowerPoint](docs/demo-contact-sheet.png)
+![Collaborative studio editing a slide from the fictional demo](docs/studio-preview.png)
+
+*The local studio: edit slide objects, inspect properties and discuss changes.*
+
+![Five fictional demo slides rendered in PowerPoint](docs/demo-contact-sheet.png)
+
+*The generated PowerPoint uses editable text, diagrams and charts; the chart data is fictional.*
+
+## Collaborate in a browser
+
+After creating a project, run `npm run session -- --project research-talk --port 0` to open a local shared studio. The command prints owner, editor and reviewer invitations. Collaborators can edit native slide objects, comment, and export a PowerPoint; an optional local agent adapter can propose changes. No agent or paid service is enabled by default. See the [session guide](docs/session.md) for roles, private-network access, the adapter protocol and collaboration limits.
+
+The studio's experimental preview of an existing PowerPoint has narrower support: selected text can be edited, but its original non-text objects are not editable and exporting those edits back to PowerPoint is not yet supported. Browser previews approximate PowerPoint rendering.
 
 ## First presentation
 
@@ -128,8 +140,12 @@ If previews are unavailable, install LibreOffice plus `pdftoppm` (Poppler); Wind
 
 For “externally modified PPTX,” keep a separate copy and reconcile its changes into YAML before rebuilding. Direct PowerPoint edits do **not** update source files. Never delete the output or history until edits have been reconciled. For “missing translation” or “text overflow,” complete the translation or shorten the relevant slide; validation identifies its stable ID.
 
-The CLI processes presentation files locally and makes no AI network calls. A coding agent is a separate service with its own data handling: if you use one, the agent and its connected tools may transmit source documents, extracted text or prompts outside your computer. Review that agent's configuration and policies, and do not expose confidential material unless you have explicitly approved the destination and scope. External providers in this project are extension interfaces only; no network AI provider is enabled or called by the CLI.
+By default, the CLI processes presentation files locally and makes no AI network calls. An explicitly configured session agent adapter can invoke an external service. A coding agent is a separate service with its own data handling: if you use one, the agent and its connected tools may transmit source documents, extracted text or prompts outside your computer. Review that agent's configuration and policies, and do not expose confidential material unless you have explicitly approved the destination and scope. No network AI provider or agent is enabled by default.
 
 Project folders are ignored by Git by default, except the public fictional demo source. Do not add confidential inputs or generated materials to a public repository.
 
 See [architecture and content schema](docs/architecture.md), [workflows and manual edit reconciliation](docs/workflows.md), [privacy and providers](docs/providers.md), and [release limitations](docs/limitations.md). PPTimistic is a standalone GitHub template. The CLI keeps project files local unless you deliberately publish them; review an agent's separate data handling before using one.
+
+## Contributing
+
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) for development and testing, and [SECURITY.md](SECURITY.md) for reporting security issues. The project is available under the [MIT license](LICENSE).

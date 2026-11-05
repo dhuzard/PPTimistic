@@ -16,7 +16,12 @@ import { renderProject } from '../rendering/index.js';
 import { applyRevision } from '../feedback/index.js';
 import { prepareImages, attachImage } from '../images/index.js';
 
-const cli=new Command().name('pptimistic').description('Create editable presentations locally. No API key required.').version('0.2.0');
+const cli=new Command().name('pptimistic').description('Create editable presentations locally. No API key required.').version('0.3.0');
+cli.hook('preAction',async (_root,command)=>{
+  if (!['setup','new','demo','build','render','translate','revise','images','ingest'].includes(command.name())) return;
+  const name=command.processedArgs[0] ?? command.opts().project ?? (command.name()==='demo'?'demo':undefined);
+  if (name) { const {assertNoActiveSession}=await import('../session/lease.js');await assertNoActiveSession(name); }
+});
 const defaults=projectSchema.parse({title:'PPTimistic',...await readYaml(path.join(root,'config/defaults.yaml'))});
 const language=(value?:string) => (value??process.env.LC_ALL??process.env.LANG??Intl.DateTimeFormat().resolvedOptions().locale).toLowerCase().startsWith('fr')?'fr':'en';
 const split=(s:string)=>s.split(',').map(s=>s.trim()).filter(Boolean);
@@ -192,6 +197,24 @@ projectOption(cli.command('images').description('Prepare per-slide prompts and p
   .option('--authorize <ids>','Approve replacing an accepted/protected asset').action(async (_name,o)=>{
     if(o.asset&&!o.slide)throw new Error('--asset requires --slide.');
     print(o.asset?await attachImage(o.project,o.slide,o.asset,split(o.authorize??'')):await prepareImages(o.project,o.slide));
+  });
+
+projectOption(cli.command('session').alias('serve').description('Open a shared browser studio with live editing, feedback and native PowerPoint export'))
+  .option('--host <address>','Bind address; use 0.0.0.0 only on a trusted private network','127.0.0.1')
+  .option('--port <number>','HTTP port (0 selects an available port)','0')
+  .option('--agent-config <path>','Local JSON executable configuration for the background agent worker')
+  .action(async (_name,o)=>{
+    const {startSession}=await import('../session/server.js');
+    const {agentConfigSchema}=await import('../session/agent.js');
+    const agentConfig=o.agentConfig?agentConfigSchema.parse(JSON.parse(await fs.readFile(path.resolve(o.agentConfig),'utf8'))):undefined;
+    const session=await startSession({project:o.project,host:o.host,port:Number(o.port),agentConfig});
+    print({message:'PPTimistic shared studio is running. Invitation links grant access to this project; keep the owner link private.',
+      url:session.url,owner:`${session.url}/#token=${session.ownerToken}`,editor:`${session.url}/#token=${session.editorToken}`,reviewer:`${session.url}/#token=${session.reviewerToken}`,
+      agent:agentConfig?'Configured local worker':'Feedback is queued. Connect a local worker with --agent-config for automatic responses.',
+      network:o.host==='127.0.0.1'?'Local computer only.':'Share using this computer’s private network address in place of localhost.'});
+    let stopping=false;
+    const stop=()=>{if(stopping)return;stopping=true;void session.close().then(()=>{process.exitCode=0;});};
+    process.once('SIGINT',stop);process.once('SIGTERM',stop);
   });
 
 cli.showHelpAfterError();

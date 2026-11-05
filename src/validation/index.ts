@@ -26,6 +26,23 @@ export async function validateContent(dir: string, config: Project, deck: Deck, 
   for (const slide of deck.slides) {
     if (seen.has(slide.id)) add('duplicate-id','Slide IDs must be unique.',slide.id);
     seen.add(slide.id);
+    const objectIds=new Set<string>();
+    for (const object of slide.objects??[]) {
+      if (objectIds.has(object.id)) add('duplicate-object-id',`Object IDs must be unique within the slide: ${object.id}`,slide.id);
+      objectIds.add(object.id);
+      if (object.type==='image') {
+        const asset=await safePath(dir,object.asset!);
+        if (!(await exists(asset))) add('missing-asset',`Missing custom image: ${object.asset}`,slide.id);
+      }
+      const style={...object.style,...slide.visual_objects?.[object.id]?.style};
+      if (object.type==='text' && contrast(style.color??theme.foreground,style.fill??theme.background)<4.5) add('object-contrast',`${object.id}: text contrast is below 4.5:1.`,slide.id);
+    }
+    for (const [role,override] of Object.entries(slide.visual_objects??{})) {
+      if (override.hidden && !objectIds.has(role)) add('protected-object',`Source object ${role} cannot be hidden.`,slide.id);
+      if (override.style?.color && !objectIds.has(role) && !/^(?:decoration-|connector-|illustration$|chart$)/.test(role)) {
+        if (contrast(override.style.color,override.style.fill??(/^node-/.test(role)?theme.pale:theme.background))<4.5) add('object-contrast',`${role}: text contrast is below 4.5:1.`,slide.id);
+      }
+    }
     if (!slide.content[config.source_locale]) add('source-locale','Missing original content.',slide.id,config.source_locale);
     if (slide.evidence === 'missing') add('evidence','Scientific evidence has not been classified; review the source before approval.',slide.id,undefined,'warning');
     if (['established','interpretation'].includes(slide.evidence) && !slide.source_refs.length && !slide.citations.length) add('unsupported-claim','Scientific claims require a source reference or citation.',slide.id);
@@ -90,6 +107,11 @@ export async function validateContent(dir: string, config: Project, deck: Deck, 
     for (const locale of locales) {
       const c = slide.content[locale];
       if (!c) { add('missing-translation',`Translation is missing. Run translate --to ${locale} or supply content manually.`,slide.id,locale); continue; }
+      for (const object of slide.objects??[]) {
+        const localized=c.objects?.[object.id];
+        if (object.type==='text' && !localized?.text?.trim()) add('missing-object-translation',`Provide localized text for ${object.id}; source-language fallback is not used.`,slide.id,locale);
+        if (object.type==='image' && !localized?.alt?.trim()) add('alt-text',`Provide a localized alt description for ${object.id}.`,slide.id,locale);
+      }
       const title=normalized(c.title);
       const titles=seenTitles.get(locale)??new Set<string>();
       if (!title) add('slide-title','Provide a nonblank localized slide title.',slide.id,locale);

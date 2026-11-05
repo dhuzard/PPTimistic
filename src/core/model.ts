@@ -9,6 +9,7 @@ export const localizedSchema = z.object({
   notes: z.string().default(''), caption: z.string().default(''), alt: z.string().default(''),
   fictionalNotice: z.string().optional(),
   source_fingerprint: z.string().regex(/^[a-f0-9]{64}$/).optional(),
+  objects: z.record(z.string().regex(/^object-[0-9a-f-]{36}$/), z.object({ text: z.string().optional(), alt: z.string().optional() }).strict()).optional(),
   labels: z.array(z.string()).default([]), seriesNames: z.array(z.string()).default([]),
   review: z.enum(['draft', 'review', 'approved', 'locked']).default('draft')
 }).strict();
@@ -20,6 +21,31 @@ export const claimSchema = z.object({
   excerpt: z.string().refine(value => Boolean(value.trim()), 'Source excerpt must not be blank'),
   locator: z.string().refine(value => Boolean(value.trim()), 'Locator must not be blank').optional()
 }).strict();
+export const visualObjectOverrideSchema = z.object({
+  x: z.number().finite().optional(), y: z.number().finite().optional(),
+  w: z.number().finite().positive().optional(), h: z.number().finite().min(0).optional(),
+  hidden: z.boolean().optional(),
+  style: z.object({ color: z.string().regex(/^[A-Fa-f0-9]{6}$/).optional(), fill: z.string().regex(/^[A-Fa-f0-9]{6}$/).optional(), fontSize: z.number().finite().min(1).max(120).optional(), bold: z.boolean().optional() }).strict().optional()
+}).strict();
+export type VisualObjectOverride = z.infer<typeof visualObjectOverrideSchema>;
+export const customObjectSchema = z.object({
+  id: z.string().regex(/^object-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/),
+  type: z.enum(['text', 'shape', 'image']),
+  x: z.number().finite(), y: z.number().finite(), w: z.number().finite().positive(), h: z.number().finite().positive(),
+  asset: z.string().min(1).optional(), accepted: z.boolean().optional(),
+  style: visualObjectOverrideSchema.shape.style
+}).strict().refine(o => o.type === 'image' ? Boolean(o.asset) : !o.asset && !o.accepted, 'Only images have an asset or acceptance, and images require an asset');
+export const nativeTextRunSchema = z.object({
+  paragraph: z.number().int().nonnegative(), run: z.number().int().nonnegative(),
+  text: z.string().max(100_000).refine(value => !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\r\n]/.test(value), 'Keep paragraph boundaries and valid XML text')
+}).strict();
+export const nativeTextSchema = z.object({
+  sourceSha256: z.string().regex(/^[a-f0-9]{64}$/),
+  slidePart: z.string().regex(/^ppt\/slides\/slide\d+\.xml$/),
+  objects: z.record(z.string().min(1).max(200), z.object({
+    runs: z.array(nativeTextRunSchema).min(1), binding: z.enum(['title', 'message']).optional()
+  }).strict())
+}).strict();
 export const slideSchema = z.object({
   id: z.string().regex(/^[A-Za-z][A-Za-z0-9_-]*$/),
   layout: z.enum(layouts), status: z.enum(['draft', 'review', 'approved', 'locked']).default('draft'),
@@ -27,6 +53,9 @@ export const slideSchema = z.object({
   source_refs: z.array(z.string()).default([]), citations: z.array(z.string()).default([]),
   claims: z.array(claimSchema).optional(),
   content: z.record(localeSchema, localizedSchema),
+  native_text: nativeTextSchema.optional(),
+  objects: z.array(customObjectSchema).optional(),
+  visual_objects: z.record(z.string().regex(/^[A-Za-z][A-Za-z0-9_-]*$/), visualObjectOverrideSchema).optional(),
   visual: z.object({ asset: z.string().optional(), brief: z.string().default(''), accepted: z.boolean().default(false), decorative: z.boolean().optional() }).strict().optional(),
   chart: z.object({
     fictional: z.boolean().default(false), data_ref: z.string().optional(),

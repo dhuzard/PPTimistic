@@ -25,10 +25,10 @@ slides:
         notes: Un studio local pour la communication scientifique.
         caption: ""
         alt: ""
+        source_fingerprint: 915d890be6c3e8a1aaef3f1a770d066584e39885175a14ebd285411c2a0824f9
         labels: []
         seriesNames: []
         review: draft
-        source_fingerprint: 915d890be6c3e8a1aaef3f1a770d066584e39885175a14ebd285411c2a0824f9
   - id: S002
     layout: text-image
     status: draft
@@ -56,10 +56,10 @@ slides:
           réfléchir.
         caption: ""
         alt: "Illustration conceptuelle : une idée centrale relie trois éléments."
+        source_fingerprint: fdfde85bebef34c6e7417fd21fc760b59900cbf98f99e808931407d144ef4d51
         labels: []
         seriesNames: []
         review: draft
-        source_fingerprint: fdfde85bebef34c6e7417fd21fc760b59900cbf98f99e808931407d144ef4d51
     visual:
       asset: assets/reference/idea.svg
       brief: Conceptual network, one central idea, restrained teal, no text.
@@ -93,6 +93,7 @@ slides:
         notes: Chaque étape est une forme PowerPoint native et modifiable.
         caption: ""
         alt: ""
+        source_fingerprint: db4c0da2fed623830dfcfa4ab3acf3acb8af689d4a9b951ee03730d2644e7aba
         labels:
           - Sources
           - Structure
@@ -100,7 +101,6 @@ slides:
           - Partage
         seriesNames: []
         review: draft
-        source_fingerprint: db4c0da2fed623830dfcfa4ab3acf3acb8af689d4a9b951ee03730d2644e7aba
   - id: S004
     layout: chart
     status: draft
@@ -115,7 +115,8 @@ slides:
         body: This editable chart demonstrates the format, not a research result.
         notes: This editable chart demonstrates the format, not a research result.
         caption: Fictional example data — no scientific inference.
-        alt: 'Fictional values: Example A, 12; Example B, 19; Example C, 15. Demonstration only, with no scientific inference.'
+        alt: "Fictional values: Example A, 12; Example B, 19; Example C, 15.
+          Demonstration only, with no scientific inference."
         labels:
           - Example A
           - Example B
@@ -129,7 +130,9 @@ slides:
         body: Ce graphique modifiable illustre le format, pas un résultat de recherche.
         notes: Ce graphique modifiable illustre le format, pas un résultat de recherche.
         caption: Données fictives — aucune inférence scientifique.
-        alt: 'Valeurs fictives : exemple A, 12 ; exemple B, 19 ; exemple C, 15. Démonstration uniquement, sans inférence scientifique.'
+        alt: "Valeurs fictives : exemple A, 12 ; exemple B, 19 ; exemple C, 15.
+          Démonstration uniquement, sans inférence scientifique."
+        source_fingerprint: e88a063b80c233493de736ea632afce47b569f46edfb1411e015d9c7165e1d3b
         labels:
           - Exemple A
           - Exemple B
@@ -137,7 +140,6 @@ slides:
         seriesNames:
           - Valeurs fictives
         review: draft
-        source_fingerprint: e88a063b80c233493de736ea632afce47b569f46edfb1411e015d9c7165e1d3b
     chart:
       fictional: true
       series:
@@ -175,7 +177,7 @@ slides:
           présentation.
         caption: ""
         alt: ""
+        source_fingerprint: aa861ab3de11edf5a3799e3e739016acc8ea5edf25e1656b9ad7e22cdd6bd97d
         labels: []
         seriesNames: []
         review: draft
-        source_fingerprint: aa861ab3de11edf5a3799e3e739016acc8ea5edf25e1656b9ad7e22cdd6bd97d

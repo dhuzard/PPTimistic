@@ -1,3 +1,14 @@
+# Shared session verification — 5 November 2026
+
+
+Verified locally on Windows with Node 24.16.0. `npm run check` passed TypeScript and 122 tests across 20 test files; the optional LibreOffice reflow test was skipped because LibreOffice was unavailable. No real model calls were made. The included Codex adapter was exercised against a local fake CLI, including approvals, command flags, structured text/geometry/style/image proposals, scope rejection and temporary-file cleanup.
+
+HTTP integration tests cover concurrent Yjs inserts, stale object and agent changes, role permissions, source/asset changes, protected content, uploads, undo, persistent feedback, a local fixture worker, actual native PPTX export and the single-writer lease. A regression test uses two real Chromium browser contexts for inline slide text editing, shared feedback and navigation. Separate browser QA exercised desktop and narrow layouts and recorded no JavaScript errors.
+
+The ignored fictional project `projects/collaboration-preview-20261105` built English and French decks and validated with zero issues. Both were opened and rendered by the Windows PowerPoint adapter. Visual inspection covered the actual English and French five-slide contact sheets, the desktop S002 browser editor screenshot, and the narrow S001 browser/comments screenshot. The observed titles, text, diagram and chart labels were legible in those images; this does not certify every possible user layout or full-size slide. Browser previews remain approximations of PowerPoint typography.
+
+Existing tracked project sources, slide IDs and accepted assets were unchanged. Browser QA temporarily edited S001 in the separate fictional project and restored its exact authored wording. Output history and separate browser screenshots are retained in that project's ignored `output/` folder. Test servers were stopped; nothing was committed, pushed or published.
+
 # PPTimistic initial template verification — 3 November 2026
 
 Verified in the standalone PPTimistic checkout on Windows with Node.js v24.16.0 and npm 11.13.0. No paid service, AI API key or external document transmission was used. PowerPoint and Poppler were available; LibreOffice was absent.

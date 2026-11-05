@@ -9,7 +9,15 @@ import { validateContent, validatePptx, type Issue } from '../validation/index.j
 import type { Deck, Project, Theme } from './model.js';
 
 export type BuildProvenance = { chartSelections?:Record<string,Awaited<ReturnType<typeof resolveChartData>>['selection']>; buildId:string; locale:string; pptxSha256:string; sourceFingerprint:string; sources:Record<string,string>; sourceRecords:Record<string,{path:string; sha256:string; recordedSha256:string; extracted?:{path:string; sha256:string; recordedSha256:string}}> ; assets:Record<string,{path:string; sha256:string}>; prompts:Record<string,{path:string; sha256:string; role:'preparation-or-reuse'; generationProvenance:'unavailable'}> };
-export type BuildState = { version?:2; files: Record<string,string>; slides: Record<string,{ fingerprint:string; protected:boolean; acceptedAsset?:{path:string; sha256:string}; locales: Record<string,{ fingerprint:string; protected:boolean }> }>; provenance?:Record<string,BuildProvenance> };
+export type BuildState = { version?:2; files: Record<string,string>; slides: Record<string,{ fingerprint:string; protected:boolean; acceptedAsset?:{path:string; sha256:string}; acceptedAssets?:Record<string,{path:string; sha256:string}>; locales: Record<string,{ fingerprint:string; protected:boolean }> }>; provenance?:Record<string,BuildProvenance> };
+async function customAssetEvidence(dir:string, slide:Deck['slides'][number]) {
+  const assets:Record<string,{path:string;sha256:string}>={};
+  for (const object of slide.objects??[]) if (object.type==='image' && object.asset) {
+    const file=await safePath(dir,object.asset);
+    assets[object.id]={path:object.asset,sha256:await exists(file) ? await hashFile(file) : '<missing>'};
+  }
+  return assets;
+}
 async function sourceEvidence(dir:string,deck:Deck) {
   const index=await safePath(dir,'content/sources.yaml');
   const present=await exists(index);
@@ -29,7 +37,8 @@ async function sourceEvidence(dir:string,deck:Deck) {
 export async function sourceFingerprint(dir:string, config:Project, deck:Deck, theme:Theme, locale:string) {
   const slides=await Promise.all(deck.slides.map(async s=>{
     const asset=s.visual?.asset ? await safePath(dir,s.visual.asset) : undefined;
-    return {...s,content:s.content[locale]??null,assetSha256:asset && await exists(asset) ? await hashFile(asset) : asset ? '<missing>' : null};
+    return {...s,content:s.content[locale]??null,assetSha256:asset && await exists(asset) ? await hashFile(asset) : asset ? '<missing>' : null,
+      ...(s.objects?.some(object=>object.type==='image') ? {objectAssets:await customAssetEvidence(dir,s)} : {})};
   }));
   return hash(JSON.stringify({config,theme,locale,slides,sourceEvidence:await sourceEvidence(dir,deck)}));
 }
@@ -39,9 +48,12 @@ export async function fingerprints(dir: string, deck: Awaited<ReturnType<typeof 
     const assetPath = s.visual?.asset ? await safePath(dir,s.visual.asset) : undefined;
     const asset = assetPath ? (await exists(assetPath) ? await hashFile(assetPath) : '<missing>') : '';
     const { content, status, locked, ...shared }=s;
-    const base={shared,theme,asset};
+    const objectAssets=await customAssetEvidence(dir,s);
+    const acceptedAssets=Object.fromEntries((s.objects??[]).filter(object=>object.type==='image' && object.accepted).map(object=>[object.id,objectAssets[object.id]]));
+    const base={shared,theme,asset,...(Object.keys(objectAssets).length ? {objectAssets} : {})};
     result[s.id]={fingerprint:hash(JSON.stringify(base)),protected:locked||status==='approved'||status==='locked',
       ...(s.visual?.accepted && s.visual.asset ? {acceptedAsset:{path:s.visual.asset,sha256:asset}} : {}),
+      ...(Object.keys(acceptedAssets).length ? {acceptedAssets} : {}),
       locales:Object.fromEntries(Object.entries(content).map(([locale,c])=>{
         const {review,...text}=c;
         return [locale,{fingerprint:hash(JSON.stringify(text)),protected:review==='approved'||review==='locked'}];
@@ -55,7 +67,8 @@ export function protectionIssues(previous: BuildState|undefined,next: BuildState
   for (const [id,old] of Object.entries(previous.slides)) {
     if (authorized.includes(id)) continue;
     const n=next[id];
-    if (old.acceptedAsset && (!n?.acceptedAsset || n.acceptedAsset.path!==old.acceptedAsset.path || n.acceptedAsset.sha256!==old.acceptedAsset.sha256)) issues.push(`${id}: accepted image changed or acceptance removed. Explicitly authorize it with --authorize ${id}.`);
+    if (Object.entries(old.acceptedAssets??{}).some(([key,asset])=>!n?.acceptedAssets?.[key] || n.acceptedAssets[key].path!==asset.path || n.acceptedAssets[key].sha256!==asset.sha256)) issues.push(`${id}: accepted custom image changed, removed, or acceptance removed. Explicitly authorize it with --authorize ${id}.`);
+    else if (old.acceptedAsset && (!n?.acceptedAsset || n.acceptedAsset.path!==old.acceptedAsset.path || n.acceptedAsset.sha256!==old.acceptedAsset.sha256)) issues.push(`${id}: accepted image changed or acceptance removed. Explicitly authorize it with --authorize ${id}.`);
     else if (old.protected && (!n || !n.protected || n.fingerprint!==old.fingerprint || Object.entries(old.locales).some(([l,v])=>n.locales[l]?.fingerprint!==v.fingerprint))) issues.push(`${id}: approved/locked slide changed. Explicitly authorize it with --authorize ${id}.`);
     else if (Object.entries(old.locales).some(([l,v])=>v.protected && (!n || n.fingerprint!==old.fingerprint || !n.locales[l]?.protected || n.locales[l]?.fingerprint!==v.fingerprint))) issues.push(`${id}: approved/locked translation changed. Explicitly authorize it with --authorize ${id}.`);
   }
@@ -89,6 +102,7 @@ export async function loadProtectionBaseline(dir:string):Promise<{state:BuildSta
 }
 export async function buildProject(name: string, options: {locale?:string; authorize?:string[]}={}) {
   const {dir,config,deck,theme}=await loadProject(name);
+  if (deck.slides.some(slide=>slide.native_text && Object.keys(slide.native_text.objects).length)) throw new Error('This project contains edits to original PowerPoint objects. Generic build cannot preserve them; reconcile the native edits with the presentation-specific builder first.');
   const locales=options.locale ? [options.locale] : config.output_locales;
   const output=await safePath(dir,'output');
   await fs.mkdir(output,{recursive:true});
@@ -122,6 +136,7 @@ export async function buildProject(name: string, options: {locale?:string; autho
   const assets:BuildProvenance['assets']={},prompts:BuildProvenance['prompts']={};
   for (const slide of deck.slides) {
     if (slide.visual?.asset) assets[slide.id]={path:slide.visual.asset,sha256:await hashFile(await safePath(dir,slide.visual.asset))};
+    for (const [id,evidence] of Object.entries(await customAssetEvidence(dir,slide))) assets[`${slide.id}:${id}`]=evidence;
     const prompt=`assets/generated/${slide.id}.prompt.json`, p=await safePath(dir,prompt);
     if (await exists(p)) {
       const bytes=await fs.readFile(p);

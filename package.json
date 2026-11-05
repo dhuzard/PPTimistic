@@ -22,6 +22,7 @@
     "revise": "tsx src/cli/index.ts revise",
     "ingest": "tsx src/cli/index.ts ingest",
     "images": "tsx src/cli/index.ts images",
+    "session": "tsx src/cli/index.ts session",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "check": "npm run typecheck && npm test"
@@ -30,6 +31,7 @@
     "@inquirer/prompts": "^8.7.5",
     "commander": "^15.0.0",
     "csv-parse": "^7.0.3",
+    "esbuild": "^0.28.2",
     "fast-xml-parser": "^5.11.2",
     "jsqr": "^1.4.0",
     "jszip": "^3.10.2",
@@ -39,6 +41,7 @@
     "qrcode": "^1.5.4",
     "sharp": "^0.35.5",
     "yaml": "^2.9.1",
+    "yjs": "^13.6.33",
     "zod": "^4.6.7"
   },
   "devDependencies": {

@@ -6,7 +6,17 @@ Créez des présentations PowerPoint sobres et modifiables avec un agent de prog
 
 [English → README.md](README.md)
 
-![Démonstration de cinq diapositives, rendue dans PowerPoint](docs/demo-contact-sheet.png)
+![Studio collaboratif sur une diapositive de démonstration fictive](docs/studio-preview.png)
+
+*Le studio local permet de modifier les objets et de commenter une diapositive.*
+
+![Démonstration de cinq diapositives fictives, rendue dans PowerPoint](docs/demo-contact-sheet.png)
+
+## Collaborer dans le navigateur
+
+Après avoir créé un projet, lancez `npm run session -- --project research-talk --port 0`. Le serveur local affiche des invitations distinctes pour le propriétaire, les éditeurs et les relecteurs. Vous pouvez modifier le texte, les positions, les formes et les images, échanger des commentaires et exporter un PowerPoint modifiable. Un adaptateur d’agent facultatif peut proposer des modifications ; aucun agent ni service payant n’est activé par défaut. Le [guide des sessions](docs/session.md), en anglais, décrit les rôles, l’accès sur un réseau privé et la configuration de l’agent. L’interface du studio est actuellement en anglais ; les langues des diapositives restent indépendantes.
+
+L’aperçu expérimental d’un PowerPoint existant est plus limité : certains textes peuvent être modifiés, mais les autres objets d’origine ne sont pas modifiables et l’export de ces modifications vers PowerPoint n’est pas encore disponible. Le rendu dans le navigateur reste approximatif.
 
 ## Première présentation
 
@@ -118,6 +128,10 @@ GitHub Actions vérifie Node 22.13 et 24 sous Linux, macOS et Windows. Le job Li
 
 Les aperçus nécessitent LibreOffice avec `pdftoppm`, ou PowerPoint installé sous Windows. Configurez `SOFFICE_PATH` et `PDFTOPPM_PATH` si nécessaire. La commande render indique les outils locaux manquants ; le PPTX reste disponible. Si le dossier d'import est introuvable, vérifiez son chemin complet et indiquez le dossier contenant les fichiers. `--from-plan` demande un seul fichier Markdown avec des titres de diapositives `##`. L'assistant vérifie Node, les dépendances et les droits d'écriture avant de créer un projet ; `npm run doctor` détaille les prérequis à corriger. Arial est la police par défaut ; configurez Inter si elle est installée. Ne redistribuez pas de polices propriétaires. Les diagnostics et les commandes avancées restent principalement en anglais dans cette version.
 
-La CLI traite les fichiers localement et n'effectue aucun appel réseau vers une IA. Un agent de programmation est un service distinct, soumis à ses propres règles de traitement des données : si vous en utilisez un, l'agent et ses outils connectés peuvent transmettre des documents sources, du texte extrait ou des prompts hors de votre ordinateur. Vérifiez sa configuration et ses règles, et ne lui confiez pas de données confidentielles sans avoir explicitement approuvé la destination et le périmètre. Les fournisseurs externes de ce projet sont uniquement des interfaces d'extension ; la CLI n'en active ni n'en appelle aucun.
+Par défaut, la CLI traite les fichiers localement et n'effectue aucun appel réseau vers une IA. Un adaptateur d'agent explicitement configuré pour une session peut appeler un service externe. Un agent de programmation est un service distinct, soumis à ses propres règles de traitement des données : si vous en utilisez un, l'agent et ses outils connectés peuvent transmettre des documents sources, du texte extrait ou des prompts hors de votre ordinateur. Vérifiez sa configuration et ses règles, et ne lui confiez pas de données confidentielles sans avoir explicitement approuvé la destination et le périmètre. Aucun fournisseur d'IA ni agent réseau n'est activé par défaut.
 
 Les projets privés sont exclus de Git par défaut, sauf les sources fictives de la démonstration. N'ajoutez pas de documents confidentiels ni de fichiers générés à un dépôt public. Voir [les parcours détaillés](docs/workflows.md), [le modèle de contenu](docs/architecture.md), [la confidentialité](docs/providers.md) et [les limites](docs/limitations.md). PPTimistic est un dépôt modèle indépendant. La CLI conserve les fichiers du projet localement sauf publication volontaire ; vérifiez séparément le traitement des données de l'agent si vous en utilisez un.
+
+## Contribuer
+
+Consultez [CONTRIBUTING.md](CONTRIBUTING.md) pour contribuer et [SECURITY.md](SECURITY.md) pour signaler un problème de sécurité. Le projet est distribué sous [licence MIT](LICENSE).

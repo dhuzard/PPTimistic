@@ -33,7 +33,7 @@ export function validateGeometry(g: SlideGeometry): Issue[] {
   return issues;
 }
 
-export async function drawSlide(pptx: PptxGenJS, model: Slide, c: Localized, theme: Theme, locale: string, dir: string, index: number): Promise<SlideGeometry> {
+export async function composeSlide(pptx: PptxGenJS, model: Slide, c: Localized, theme: Theme, locale: string, dir: string, index: number): Promise<SlideGeometry> {
   const slide=pptx.addSlide();
   slide.background={color:theme.background};
   const accessibility: AccessibleObject[]=[];
@@ -137,4 +137,12 @@ export async function drawSlide(pptx: PptxGenJS, model: Slide, c: Localized, the
   }
   footer();
   return g;
+}
+
+// Compose once into a shared scene, then emit native PowerPoint objects.
+export async function drawSlide(pptx: PptxGenJS, model: Slide, c: Localized, theme: Theme, locale: string, dir: string, index: number): Promise<SlideGeometry> {
+  const { buildSlideScene, renderSlideScene } = await import('../core/scene.js');
+  const scene = await buildSlideScene(model,c,theme,locale,dir,index);
+  renderSlideScene(pptx,scene);
+  return scene.geometry;
 }

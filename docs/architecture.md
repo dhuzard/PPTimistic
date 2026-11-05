@@ -1,6 +1,6 @@
 # Architecture and content model
 
-The engine is local and agent-independent. YAML is the editable source; PptxGenJS assembles an actual Open XML PPTX. TypeScript runs through tsx, with separate strict type checking. There is no web app, database, background agent or mandatory network service.
+The engine is local and agent-independent. YAML is the editable source; PptxGenJS assembles an actual Open XML PPTX. TypeScript runs through tsx, with separate strict type checking. An optional TypeScript session server provides a shared browser editor and background agent queue without requiring a database or external service. See [shared sessions](session.md) for invitations and agent configuration.
 
 ```text
 config/              reusable themes and documented defaults
@@ -11,6 +11,7 @@ src/layouts/         nine native PowerPoint layouts, geometry records
 src/images/          provider contract, local assets, prompts and metadata
 src/localization/    manual translation requests and consistency checks
 src/feedback/        feedback log and structured source revisions
+src/session/         HTTP/SSE server, shared editor, Yjs text, journal, agent queue
 src/rendering/       LibreOffice/Poppler or Windows PowerPoint rendering
 src/validation/      content, contrast, source hashes and PPTX checks
 projects/<name>/     isolated presentation source and output
@@ -67,6 +68,26 @@ slides:
 ```
 
 The array order controls slide order. IDs never depend on current position after authoring. Do not renumber existing IDs when inserting or moving a slide. `status` and localized `review` support `draft`, `review`, `approved`, `locked`; the optional global `locked` flag also protects the slide. `evidence` is `established`, `interpretation`, `hypothesis`, `conceptual` or `missing`. Citations are user-supplied literal strings, not automatically verified bibliography entries.
+
+### Editable objects and shared sessions
+
+`buildSlideScene` composes the native layout into stable objects such as `S001:title` and `S001:illustration`. The browser and PowerPoint renderer consume that scene. Text objects retain bindings to localized source fields; edits never depend on scraping or saving browser HTML. Source elements retain their layout role IDs. Additional objects use a persisted `object-<UUID>` ID.
+
+Geometry uses slide inches. `visual_objects` stores position, size and appearance overrides keyed by role, for example:
+
+```yaml
+visual_objects:
+  title:
+    x: 0.7
+    y: 0.6
+    w: 11.8
+    h: 1.2
+    style: { color: '225E63', fontSize: 32, bold: true }
+```
+
+Added text, rectangular shapes and images live in `slide.objects` with `id`, `type`, `x`, `y`, `w`, `h`, optional `style`, and an `asset` path for images. Text and image alt descriptions live in `content[locale].objects[id].text` and `.alt`; missing translations are explicit. Accepted custom images carry `accepted: true`, and their bytes participate in build fingerprints and protection baselines.
+
+Each session holds a project lease and serializes source mutations and exports. Browser text updates use a separate Yjs document and generation per localized object. Object edits carry a base revision; agent proposals also check changes to their slide context. Before committing, the server validates the candidate, checks protection and source hashes, saves a source backup, and records a recoverable pending transaction. `.session/state.json` retains feedback, jobs and history while YAML remains authoritative. External source or image changes invalidate collaborative text generations and pending authorization. CLI writers refuse to race an active session.
 
 Imported translations carry a `source_fingerprint` that records the source wording and shared chart/citation context reviewed for that locale. When those inputs change, validation marks the translation stale and blocks export until review. A layout-only change does not invalidate wording review. Older translations without this field are reported as untracked, rather than as verified current. The fingerprint records review context, not semantic equivalence.
 
