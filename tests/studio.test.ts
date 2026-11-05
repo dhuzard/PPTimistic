@@ -38,6 +38,17 @@ beforeAll(async()=>{
 afterAll(async()=>{await fs.rm(sandbox,{recursive:true,force:true});});
 
 describe('complete local workflow',()=>{
+  test('setup provides a private brief with unknown context and rebuilding preserves user answers',async()=>{
+    const brief=file('presentation-brief.md');
+    const starter=await fs.readFile(brief,'utf8');
+    expect(starter).toContain('Audience, prior knowledge and accessibility needs: Unknown');
+    expect(starter).toContain('Visual preferences, references and required assets: Unknown');
+    const completed=starter.replace('Audience, prior knowledge and accessibility needs: Unknown','Audience, prior knowledge and accessibility needs: Clinicians');
+    await fs.writeFile(brief,completed);
+    const result=await cli('build','--project','demo');
+    expect(result.code).toBe(0);
+    expect(await fs.readFile(brief,'utf8')).toBe(completed);
+  },60000);
   test('fresh setup generates independent French/English editable decks',async()=>{
     for(const locale of ['en-US','fr-FR']) {
       const pptx=file(`output/presentation.${locale}.pptx`);

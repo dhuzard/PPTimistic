@@ -14,6 +14,22 @@ Create clean, editable PowerPoint presentations with a coding agent or a local t
 
 *The generated PowerPoint uses editable text, diagrams and charts; the chart data is fictional.*
 
+## Slide design and research
+
+PPTimistic follows a research-informed editorial approach: organize each slide around one central message, express it in a concise title, and support it with relevant evidence. One message does not mean one visual object: two coordinated graphs may be needed to support a comparison. Titles must preserve the strength and uncertainty of the evidence; for example, “These results are consistent with…” may be appropriate when causation is not established. Use readable text, purposeful visuals and supporting notes, and retain citations and editable PowerPoint objects.
+
+The approach draws on these sources:
+
+- [Naegle (2021), *Ten simple rules for effective presentation slides*](https://pmc.ncbi.nlm.nih.gov/articles/PMC8638955/) recommends one central idea per slide as practical guidance.
+- [Mayer (2020), *Multimedia Learning*, third edition](https://doi.org/10.1017/9781316941355) discusses segmenting multimedia instruction. Applying this to presenter-paced slides is an adaptation; it does not prove a universal one-idea-per-slide rule.
+- [Sweller, van Merriënboer and Paas (2019), *Cognitive Architecture and Instructional Design: 20 Years Later*](https://doi.org/10.1007/s10648-019-09465-5) explain how limited working memory and unnecessary processing demands can impair learning.
+- [Garner and Alley (2013), *How the Design of Presentation Slides Affects Audience Comprehension*](https://www.ijee.ie/articles/Vol29-6/23_ijee2791ns.pdf) found better comprehension and delayed recall for assertion–evidence slides in a study of 110 engineering students. The compared designs differed in several features, so the results cannot be attributed to headlines alone.
+- [Fiorella and Mayer (2021), *Principles for Reducing Extraneous Processing in Multimedia Learning*](https://doi.org/10.1017/9781108894333.019) discuss excluding irrelevant material, signaling important information and placing related words and graphics together.
+
+These references inform the editorial approach; they do not establish that PPTimistic itself improves learning. A person or agent authors the content and selects its layout. Automated checks can flag issues such as estimated overflow and missing source references, but they cannot determine whether a slide communicates one idea or whether a source supports a claim. Scientific and visual review remain necessary.
+
+For a real presentation, complete `projects/<name>/presentation-brief.md` with the user or agent to establish audience, purpose, evidence, visual preferences and delivery context. New projects include a blank brief; setup does not interview you or validate its answers. Use the [initialization and editorial review checklist](docs/workflows.md#initialize-the-presentation-brief) before delivery. The built-in chart layout supports one editable vertical-bar chart per slide; it does not currently create a two-chart comparison layout. See [limitations](docs/limitations.md).
+
 ## Collaborate in a browser
 
 After creating a project, run `npm run session -- --project research-talk --port 0` to open a local shared studio. The command prints owner, editor and reviewer invitations. Collaborators can edit native slide objects, comment, and export a PowerPoint; an optional local agent adapter can propose changes. No agent or paid service is enabled by default. See the [session guide](docs/session.md) for roles, private-network access, the adapter protocol and collaboration limits.

@@ -8,6 +8,23 @@
 
 The CLI initializes a coherent project directly; `templates/project/` is a minimal manual reference. Node and dependency failures block setup. Optional rendering, fonts and external providers are diagnosed without requiring API keys. Setup UI supports English and French; advanced commands, help, diagnostics and validation messages are primarily English in v0.1.
 
+## Initialize the presentation brief
+
+Before authoring a real deck, fill in `projects/<name>/presentation-brief.md` with the user or a coding agent. Establish the purpose and intended audience action; audience expertise and accessibility needs; delivery mode, venue and duration; core message, scope and required plan; sources and evidence limits; visual references and assets; languages; and delivery constraints. Record decisions and open questions. Ask only for material information that is not already available, and mark unknowns explicitly instead of inventing answers.
+
+New projects include a blank brief. For an existing project, create one without overwriting other files. The five-question setup does not conduct this interview, and the brief is not automatically validated, included in deliveries, or used to modify slides. It guides a person or agent; `content/slides.yaml` remains authoritative. Treat the brief as private project material and do not send its contents to external services without the required authorization.
+
+## Editorial review before delivery
+
+For each slide, a person or agent should check:
+
+- Is there one central message appropriate to the audience and the presentation's purpose? Do the title and supporting content express it clearly?
+- Does the evidence actually support the title? Compare the source's population, comparison, outcome, uncertainty and limits; do not turn an association into causation. Flag unresolved interpretation for human scientific review.
+- Are visuals, labels and text relevant, legible and understandable in the intended setting? Multiple coordinated visuals may support one message. Preserve useful detail in notes.
+- Are sources and evidence classifications accurate, required translations complete, and accessibility descriptions appropriate? Inspect the real output and follow the [accessibility review](accessibility-review.md).
+
+Automated checks can flag missing references, geometry and other issues; they do not decide whether evidence supports a title or a slide communicates one idea. The built-in chart layout supports one native vertical-bar chart per slide, not two coordinated charts. When a comparison requires two, consider an appropriate supported alternative or a reviewed manual workflow; do not imply that the built-in layout generates them. See [layout limitations](limitations.md).
+
 ## Import local source documents
 
 ```sh

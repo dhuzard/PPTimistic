@@ -12,6 +12,22 @@ Créez des présentations PowerPoint sobres et modifiables avec un agent de prog
 
 ![Démonstration de cinq diapositives fictives, rendue dans PowerPoint](docs/demo-contact-sheet.png)
 
+## Conception des diapositives et recherches
+
+PPTimistic suit une démarche éditoriale éclairée par la recherche : organiser chaque diapositive autour d'un message central, l'exprimer dans un titre concis et l'appuyer sur des éléments pertinents. Un message ne signifie pas un seul objet visuel : deux graphiques coordonnés peuvent être nécessaires pour étayer une comparaison. Les titres doivent préserver la portée et l'incertitude des données ; par exemple, « Ces résultats sont compatibles avec… » peut convenir lorsqu'un lien de causalité n'est pas établi. Le texte reste lisible, les visuels utiles et les détails complémentaires peuvent figurer dans les notes ; les citations et les objets PowerPoint restent modifiables.
+
+Cette démarche s'appuie notamment sur les références suivantes :
+
+- [Naegle (2021), *Ten simple rules for effective presentation slides*](https://pmc.ncbi.nlm.nih.gov/articles/PMC8638955/) recommande une idée centrale par diapositive comme règle pratique.
+- [Mayer (2020), *Multimedia Learning*, troisième édition](https://doi.org/10.1017/9781316941355) présente la segmentation des contenus multimédias. Son application à des diapositives dont le rythme est dirigé par l'orateur est une adaptation ; elle ne démontre pas une règle universelle d'une idée par diapositive.
+- [Sweller, van Merriënboer et Paas (2019), *Cognitive Architecture and Instructional Design: 20 Years Later*](https://doi.org/10.1007/s10648-019-09465-5) expliquent comment les limites de la mémoire de travail et les traitements inutiles peuvent nuire à l'apprentissage.
+- [Garner et Alley (2013), *How the Design of Presentation Slides Affects Audience Comprehension*](https://www.ijee.ie/articles/Vol29-6/23_ijee2791ns.pdf) ont observé une meilleure compréhension et une meilleure mémorisation différée avec des diapositives « affirmation–preuve » dans une étude auprès de 110 étudiants en ingénierie. Les modèles comparés différaient sur plusieurs caractéristiques : les résultats ne peuvent donc pas être attribués aux seuls titres.
+- [Fiorella et Mayer (2021), *Principles for Reducing Extraneous Processing in Multimedia Learning*](https://doi.org/10.1017/9781108894333.019) traitent notamment de l'exclusion des éléments sans rapport, de la mise en évidence des informations importantes et du rapprochement des textes et visuels associés.
+
+Ces références éclairent la démarche éditoriale ; elles ne démontrent pas que PPTimistic améliore lui-même l'apprentissage. Une personne ou un agent rédige le contenu et choisit sa mise en page. Les contrôles automatiques peuvent signaler un dépassement estimé ou une référence source manquante, mais ne déterminent pas si une diapositive transmet une seule idée ou si une source étaye une affirmation. Une relecture scientifique et visuelle reste nécessaire.
+
+Pour une présentation réelle, complétez `projects/<nom>/presentation-brief.md` avec l'utilisateur ou l'agent afin de préciser le public, l'objectif, les preuves, les préférences visuelles et le contexte de présentation. Les nouveaux projets comprennent une trame vierge ; l'assistant d'installation ne mène pas cet entretien et ne valide pas les réponses. Consultez la [préparation et la liste de relecture éditoriale](docs/workflows.md#initialize-the-presentation-brief), en anglais, avant livraison. La mise en page de graphique intégrée prend en charge un seul graphique modifiable à barres verticales par diapositive ; elle ne crée pas encore de comparaison à deux graphiques. Voir les [limites](docs/limitations.md).
+
 ## Collaborer dans le navigateur
 
 Après avoir créé un projet, lancez `npm run session -- --project research-talk --port 0`. Le serveur local affiche des invitations distinctes pour le propriétaire, les éditeurs et les relecteurs. Vous pouvez modifier le texte, les positions, les formes et les images, échanger des commentaires et exporter un PowerPoint modifiable. Un adaptateur d’agent facultatif peut proposer des modifications ; aucun agent ni service payant n’est activé par défaut. Le [guide des sessions](docs/session.md), en anglais, décrit les rôles, l’accès sur un réseau privé et la configuration de l’agent. L’interface du studio est actuellement en anglais ; les langues des diapositives restent indépendantes.
